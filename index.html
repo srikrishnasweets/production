@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lunch Token Dashboard</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#f3f4f6;
+    min-height:100vh;
+    padding:20px;
+}
+
+.container{
+    display:grid;
+    grid-template-columns:350px 1fr;
+    gap:20px;
+}
+
+.panel{
+    background:white;
+    border-radius:16px;
+    padding:20px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+.title{
+    font-size:24px;
+    font-weight:bold;
+    margin-bottom:20px;
+}
+
+.field{
+    margin-bottom:18px;
+}
+
+label{
+    display:block;
+    margin-bottom:8px;
+    font-weight:600;
+    color:#374151;
+}
+
+input,select{
+    width:100%;
+    padding:12px;
+    border:1px solid #d1d5db;
+    border-radius:10px;
+    font-size:15px;
+}
+
+.info-box{
+    background:#f9fafb;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:12px;
+}
+
+.info-label{
+    color:#6b7280;
+    font-size:13px;
+    margin-bottom:4px;
+}
+
+.info-value{
+    font-size:18px;
+    font-weight:bold;
+}
+
+.button-group{
+    display:flex;
+    gap:10px;
+    margin-top:20px;
+}
+
+button{
+    flex:1;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.print-btn{
+    background:#111827;
+    color:white;
+}
+
+.print-btn:hover{
+    background:#1f2937;
+}
+
+.reset-btn{
+    background:#e5e7eb;
+}
+
+.reset-btn:hover{
+    background:#d1d5db;
+}
+
+.preview-wrapper{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:600px;
+}
+
+#token{
+    width:58mm;
+    background:white;
+    color:black;
+    padding:16px;
+    text-align:center;
+    border:2px dashed #d1d5db;
+}
+
+.token-header{
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:18px;
+    text-transform:uppercase;
+    line-height:1.4;
+}
+
+.token-slot{
+    font-size:18px;
+    margin-bottom:28px;
+}
+
+.token-number{
+    width:70px;
+    height:70px;
+    border:3px solid black;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:34px;
+    font-weight:bold;
+    margin:0 auto;
+}
+
+.status{
+    margin-top:18px;
+    padding:12px;
+    border-radius:10px;
+    font-weight:bold;
+    display:none;
+}
+
+.success{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.error{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+@media(max-width:900px){
+    .container{
+        grid-template-columns:1fr;
+    }
+}
+
+@media print{
+
+    body *{
+        visibility:hidden;
+    }
+
+    #token,#token *{
+        visibility:visible;
+    }
+
+    #token{
+        position:absolute;
+        left:0;
+        top:0;
+        width:58mm;
+        border:none;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="panel">
+
+        <div class="title">Lunch Token Dashboard</div>
+
+        <div class="field">
+            <label>Select Employee ID</label>
+            <select id="employeeSelect">
+                <option value="">Choose Employee</option>
+            </select>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">Employee Name</div>
+            <div class="info-value" id="employeeName">-</div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">Section</div>
+            <div class="info-value" id="employeeSection">-</div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">Lunch Time</div>
+            <div class="info-value" id="employeeTime">-</div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">Today's Token Count</div>
+            <div class="info-value" id="tokenCount">0</div>
+        </div>
+
+        <div class="button-group">
+            <button class="print-btn" onclick="printToken()">PRINT TOKEN</button>
+            <button class="reset-btn" onclick="resetSelection()">RESET</button>
+        </div>
+
+        <div id="status" class="status"></div>
+
+    </div>
+
+    <div class="panel preview-wrapper">
+
+        <div id="token">
+
+            <div class="token-header" id="previewHeader">
+                5715 - KRISHNARAJ
+            </div>
+
+            <div class="token-slot" id="previewSlot">
+                Sweet - 12:00 PM - 1:00 PM
+            </div>
+
+            <div class="token-number" id="previewNumber">
+                1
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+const employees = [
+    {
+        id:'5715',
+        name:'KRISHNARAJ',
+        section:'Sweet',
+        time:'12:00 PM - 1:00 PM'
+    },
+    {
+        id:'4281',
+        name:'RAVI',
+        section:'Packing',
+        time:'1:00 PM - 2:00 PM'
+    },
+    {
+        id:'7832',
+        name:'KUMAR',
+        section:'Production',
+        time:'12:30 PM - 1:30 PM'
+    },
+    {
+        id:'9021',
+        name:'ARUN',
+        section:'Dispatch',
+        time:'2:00 PM - 3:00 PM'
+    }
+];
+
+let tokenNumber = 1;
+const printedToday = new Set();
+
+const employeeSelect = document.getElementById('employeeSelect');
+const employeeName = document.getElementById('employeeName');
+const employeeSection = document.getElementById('employeeSection');
+const employeeTime = document.getElementById('employeeTime');
+const tokenCount = document.getElementById('tokenCount');
+const previewHeader = document.getElementById('previewHeader');
+const previewSlot = document.getElementById('previewSlot');
+const previewNumber = document.getElementById('previewNumber');
+const statusBox = document.getElementById('status');
+
+employees.forEach(emp=>{
+    const option = document.createElement('option');
+    option.value = emp.id;
+    option.textContent = `${emp.id} - ${emp.name}`;
+    employeeSelect.appendChild(option);
+});
+
+employeeSelect.addEventListener('change',()=>{
+
+    const selectedId = employeeSelect.value;
+
+    if(!selectedId){
+        resetSelection();
+        return;
+    }
+
+    const employee = employees.find(emp=>emp.id === selectedId);
+
+    employeeName.textContent = employee.name;
+    employeeSection.textContent = employee.section;
+    employeeTime.textContent = employee.time;
+
+    previewHeader.textContent = `${employee.id} - ${employee.name}`;
+    previewSlot.textContent = `${employee.section} - ${employee.time}`;
+    previewNumber.textContent = tokenNumber;
+
+    const todayCount = Array.from(printedToday).length;
+    tokenCount.textContent = todayCount;
+
+    hideStatus();
+});
+
+function printToken(){
+
+    const selectedId = employeeSelect.value;
+
+    if(!selectedId){
+        showStatus('Please select employee', 'error');
+        return;
+    }
+
+    if(printedToday.has(selectedId)){
+        showStatus('Token already printed for this employee today', 'error');
+        return;
+    }
+
+    printedToday.add(selectedId);
+
+    previewNumber.textContent = tokenNumber;
+
+    tokenCount.textContent = printedToday.size;
+
+    window.print();
+
+    tokenNumber++;
+
+    showStatus('Token printed successfully', 'success');
+}
+
+function resetSelection(){
+
+    employeeSelect.value = '';
+
+    employeeName.textContent = '-';
+    employeeSection.textContent = '-';
+    employeeTime.textContent = '-';
+
+    previewHeader.textContent = '5715 - KRISHNARAJ';
+    previewSlot.textContent = 'Sweet - 12:00 PM - 1:00 PM';
+    previewNumber.textContent = tokenNumber;
+
+    hideStatus();
+}
+
+function showStatus(message,type){
+
+    statusBox.style.display = 'block';
+    statusBox.textContent = message;
+    statusBox.className = `status ${type}`;
+}
+
+function hideStatus(){
+    statusBox.style.display = 'none';
+}
+</script>
+
+</body>
+</html>
