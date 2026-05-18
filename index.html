@@ -1,392 +1,417 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Lunch Token Dashboard</title>
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial, Helvetica, sans-serif;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Scheduling Tool</title>
+    <!-- Include SheetJS (xlsx) for Excel processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* Vanilla CSS - Premium, Modern, Glassmorphism */
+        :root {
+            --bg-color: #0f172a; /* Slate 900 */
+            --card-bg: rgba(30, 41, 59, 0.7); /* Slate 800 with opacity */
+            --primary: #3b82f6; /* Blue 500 */
+            --primary-hover: #2563eb; /* Blue 600 */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
 
-body{
-    background:#f3f4f6;
-    min-height:100vh;
-    padding:20px;
-}
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-.container{
-    display:grid;
-    grid-template-columns:350px 1fr;
-    gap:20px;
-}
+        .container {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
 
-.panel{
-    background:white;
-    border-radius:16px;
-    padding:20px;
-    box-shadow:0 2px 10px rgba(0,0,0,0.08);
-}
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-.title{
-    font-size:24px;
-    font-weight:bold;
-    margin-bottom:20px;
-}
+        h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-align: center;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
 
-.field{
-    margin-bottom:18px;
-}
+        p.subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 35px;
+            font-size: 1rem;
+        }
 
-label{
-    display:block;
-    margin-bottom:8px;
-    font-weight:600;
-    color:#374151;
-}
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 50px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            background: rgba(255, 255, 255, 0.02);
+            margin-bottom: 30px;
+        }
 
-input,select{
-    width:100%;
-    padding:12px;
-    border:1px solid #d1d5db;
-    border-radius:10px;
-    font-size:15px;
-}
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
 
-.info-box{
-    background:#f9fafb;
-    border:1px solid #e5e7eb;
-    border-radius:12px;
-    padding:14px;
-    margin-bottom:12px;
-}
+        .upload-area svg {
+            width: 54px;
+            height: 54px;
+            color: var(--primary);
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
 
-.info-label{
-    color:#6b7280;
-    font-size:13px;
-    margin-bottom:4px;
-}
+        .upload-area:hover svg {
+            transform: translateY(-5px);
+        }
 
-.info-value{
-    font-size:18px;
-    font-weight:bold;
-}
+        .upload-area input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
 
-.button-group{
-    display:flex;
-    gap:10px;
-    margin-top:20px;
-}
+        .file-name {
+            margin-top: 15px;
+            font-size: 0.95rem;
+            color: #60a5fa;
+            word-break: break-all;
+            display: none;
+            font-weight: 500;
+        }
 
-button{
-    flex:1;
-    padding:14px;
-    border:none;
-    border-radius:12px;
-    font-size:15px;
-    font-weight:bold;
-    cursor:pointer;
-    transition:0.2s;
-}
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            background: var(--primary);
+            color: white;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+            opacity: 0.5;
+            pointer-events: none;
+        }
 
-.print-btn{
-    background:#111827;
-    color:white;
-}
+        .btn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
 
-.print-btn:hover{
-    background:#1f2937;
-}
+        .btn.active:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
+        }
 
-.reset-btn{
-    background:#e5e7eb;
-}
+        .btn.active:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
 
-.reset-btn:hover{
-    background:#d1d5db;
-}
-
-.preview-wrapper{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:600px;
-}
-
-#token{
-    width:58mm;
-    background:white;
-    color:black;
-    padding:16px;
-    text-align:center;
-    border:2px dashed #d1d5db;
-}
-
-.token-header{
-    font-size:20px;
-    font-weight:bold;
-    margin-bottom:18px;
-    text-transform:uppercase;
-    line-height:1.4;
-}
-
-.token-slot{
-    font-size:18px;
-    margin-bottom:28px;
-}
-
-.token-number{
-    width:70px;
-    height:70px;
-    border:3px solid black;
-    border-radius:50%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-size:34px;
-    font-weight:bold;
-    margin:0 auto;
-}
-
-.status{
-    margin-top:18px;
-    padding:12px;
-    border-radius:10px;
-    font-weight:bold;
-    display:none;
-}
-
-.success{
-    background:#dcfce7;
-    color:#166534;
-}
-
-.error{
-    background:#fee2e2;
-    color:#991b1b;
-}
-
-@media(max-width:900px){
-    .container{
-        grid-template-columns:1fr;
-    }
-}
-
-@media print{
-
-    body *{
-        visibility:hidden;
-    }
-
-    #token,#token *{
-        visibility:visible;
-    }
-
-    #token{
-        position:absolute;
-        left:0;
-        top:0;
-        width:58mm;
-        border:none;
-    }
-}
-</style>
+        /* Spinner animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <h1>Production Scheduler</h1>
+        <p class="subtitle">Upload Excel file to generate Master schedules</p>
 
-<div class="container">
-
-    <div class="panel">
-
-        <div class="title">Lunch Token Dashboard</div>
-
-        <div class="field">
-            <label>Select Employee ID</label>
-            <select id="employeeSelect">
-                <option value="">Choose Employee</option>
-            </select>
+        <div class="upload-area" id="dropZone">
+            <svg xmlns="http://www.w3.org/-2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">Supports .xlsx and .xls formats</div>
+            <input type="file" id="fileInput" accept=".xlsx, .xls">
+            <div class="file-name" id="fileName"></div>
         </div>
 
-        <div class="info-box">
-            <div class="info-label">Employee Name</div>
-            <div class="info-value" id="employeeName">-</div>
+        <button class="btn" id="processBtn">
+            Process & Download
+        </button>
+        
+        <div class="loading" id="loadingStatus">
+            <span class="spinner"></span> <span id="loadingText">Fetching product times...</span>
         </div>
-
-        <div class="info-box">
-            <div class="info-label">Section</div>
-            <div class="info-value" id="employeeSection">-</div>
-        </div>
-
-        <div class="info-box">
-            <div class="info-label">Lunch Time</div>
-            <div class="info-value" id="employeeTime">-</div>
-        </div>
-
-        <div class="info-box">
-            <div class="info-label">Today's Token Count</div>
-            <div class="info-value" id="tokenCount">0</div>
-        </div>
-
-        <div class="button-group">
-            <button class="print-btn" onclick="printToken()">PRINT TOKEN</button>
-            <button class="reset-btn" onclick="resetSelection()">RESET</button>
-        </div>
-
-        <div id="status" class="status"></div>
-
     </div>
 
-    <div class="panel preview-wrapper">
+    <script>
+        // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
+        const API_URL = "https://script.google.com/macros/s/AKfycbxwbB41ulTO3-tV6nZ2LQL30dzqCTUhflx7wTvxZQQEkCtZztW_7Y8PKZrqEo4XkqV85g/exec";
+        
+        let selectedFile = null;
+        let productAvgTimes = {};
 
-        <div id="token">
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const fileNameDiv = document.getElementById('fileName');
+        const processBtn = document.getElementById('processBtn');
+        const loadingStatus = document.getElementById('loadingStatus');
+        const loadingText = document.getElementById('loadingText');
 
-            <div class="token-header" id="previewHeader">
-                5715 - KRISHNARAJ
-            </div>
+        // Fetch Avg Times on load using standard fetch GET request
+        window.onload = async () => {
+            loadingStatus.style.display = 'block';
+            loadingText.innerText = 'Initializing... Fetching live Avg Times from Google Sheet';
+            
+            try {
+                if (API_URL.includes("YOUR_URL_HERE")) {
+                    alert("Please paste your Google Apps Script URL into the API_URL variable inside the schedule.html file!");
+                    loadingText.innerText = 'API URL Missing.';
+                    return;
+                }
 
-            <div class="token-slot" id="previewSlot">
-                Sweet - 12:00 PM - 1:00 PM
-            </div>
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                productAvgTimes = await response.json();
+                
+                loadingStatus.style.display = 'none';
+                if (selectedFile) {
+                    processBtn.classList.add('active');
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                loadingText.innerText = 'Error loading Avg Times. Please check your API URL or internet connection.';
+                loadingText.style.color = '#ef4444';
+            }
+        };
 
-            <div class="token-number" id="previewNumber">
-                1
-            </div>
+        // File Selection Handlers
+        fileInput.addEventListener('change', (e) => {
+            handleFileSelect(e.target.files[0]);
+        });
 
-        </div>
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
 
-    </div>
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
 
-</div>
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
 
-<script>
-const employees = [
-    {
-        id:'5715',
-        name:'KRISHNARAJ',
-        section:'Sweet',
-        time:'12:00 PM - 1:00 PM'
-    },
-    {
-        id:'4281',
-        name:'RAVI',
-        section:'Packing',
-        time:'1:00 PM - 2:00 PM'
-    },
-    {
-        id:'7832',
-        name:'KUMAR',
-        section:'Production',
-        time:'12:30 PM - 1:30 PM'
-    },
-    {
-        id:'9021',
-        name:'ARUN',
-        section:'Dispatch',
-        time:'2:00 PM - 3:00 PM'
-    }
-];
+        function handleFileSelect(file) {
+            if (!file) return;
+            selectedFile = file;
+            fileNameDiv.textContent = file.name;
+            fileNameDiv.style.display = 'block';
+            if (Object.keys(productAvgTimes).length > 0) {
+                processBtn.classList.add('active');
+            }
+        }
 
-let tokenNumber = 1;
-const printedToday = new Set();
+        processBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
 
-const employeeSelect = document.getElementById('employeeSelect');
-const employeeName = document.getElementById('employeeName');
-const employeeSection = document.getElementById('employeeSection');
-const employeeTime = document.getElementById('employeeTime');
-const tokenCount = document.getElementById('tokenCount');
-const previewHeader = document.getElementById('previewHeader');
-const previewSlot = document.getElementById('previewSlot');
-const previewNumber = document.getElementById('previewNumber');
-const statusBox = document.getElementById('status');
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<span class="spinner"></span> Processing...';
+            processBtn.style.opacity = '0.8';
 
-employees.forEach(emp=>{
-    const option = document.createElement('option');
-    option.value = emp.id;
-    option.textContent = `${emp.id} - ${emp.name}`;
-    employeeSelect.appendChild(option);
-});
+            try {
+                const data = await selectedFile.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                // Read sheet to JSON
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-employeeSelect.addEventListener('change',()=>{
+                // Process logic
+                const processedData = processSchedule(jsonData);
 
-    const selectedId = employeeSelect.value;
+                // Convert processed data back to sheet
+                const newWorksheet = XLSX.utils.json_to_sheet(processedData);
+                const newWorkbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Schedule');
 
-    if(!selectedId){
-        resetSelection();
-        return;
-    }
+                // Generate and download Excel
+                XLSX.writeFile(newWorkbook, `Scheduled_${selectedFile.name}`);
+                
+                processBtn.innerHTML = 'Downloaded Successfully!';
+                processBtn.style.background = '#10b981'; // Emerald 500
+                
+                setTimeout(() => {
+                    processBtn.innerHTML = 'Process & Download';
+                    processBtn.style.background = 'var(--primary)';
+                    processBtn.disabled = false;
+                    processBtn.style.opacity = '1';
+                }, 3000);
 
-    const employee = employees.find(emp=>emp.id === selectedId);
+            } catch (error) {
+                console.error(error);
+                alert('Error processing file. Check console for details.');
+                processBtn.innerHTML = 'Process & Download';
+                processBtn.disabled = false;
+                processBtn.style.opacity = '1';
+            }
+        });
 
-    employeeName.textContent = employee.name;
-    employeeSection.textContent = employee.section;
-    employeeTime.textContent = employee.time;
+        function processSchedule(data) {
+            let currentMaster = null;
+            let currentEntryDateString = null;
+            let currentStartTime = null;
 
-    previewHeader.textContent = `${employee.id} - ${employee.name}`;
-    previewSlot.textContent = `${employee.section} - ${employee.time}`;
-    previewNumber.textContent = tokenNumber;
+            return data.map((row) => {
+                const entryDateRaw = row['Entry Date'];
+                const master = row['Master'];
+                const product = row['Product'];
+                const targetQty = Number(row['Target Qty']) || 0;
 
-    const todayCount = Array.from(printedToday).length;
-    tokenCount.textContent = todayCount;
+                let baseDate = new Date();
+                let entryDateString = '';
+                let outEntryDate = entryDateRaw; // Default output format
 
-    hideStatus();
-});
+                if (entryDateRaw) {
+                    if (entryDateRaw instanceof Date) {
+                        baseDate = new Date(entryDateRaw);
+                        entryDateString = `${baseDate.getFullYear()}-${baseDate.getMonth() + 1}-${baseDate.getDate()}`;
+                        outEntryDate = formatDateTime(baseDate).split(' ')[0]; // yyyy-mm-dd
+                    } else {
+                        baseDate = new Date(entryDateRaw);
+                        if (isNaN(baseDate.getTime())) {
+                            baseDate = new Date(); // fallback to today if invalid
+                        }
+                        entryDateString = String(entryDateRaw).trim();
+                        outEntryDate = entryDateRaw; // keep string format
+                    }
+                }
 
-function printToken(){
+                let prodKey = product ? product.toString().trim() : '';
+                let avgTime = productAvgTimes[prodKey];
+                
+                // If not found, try removing " BP" from the end, because the SETTIME sheet usually doesn't have " BP"
+                if (avgTime === undefined && prodKey.endsWith(' BP')) {
+                    const noBpKey = prodKey.substring(0, prodKey.length - 3).trim();
+                    avgTime = productAvgTimes[noBpKey];
+                }
+                
+                if (avgTime === undefined) {
+                    console.warn(`Avg Time not found for Product: ${product}`);
+                    avgTime = 0; // Assume 0 if not mapped
+                }
 
-    const selectedId = employeeSelect.value;
+                const totalMinutes = targetQty * avgTime;
 
-    if(!selectedId){
-        showStatus('Please select employee', 'error');
-        return;
-    }
+                // Reset time on new Master or new Date
+                if (master !== currentMaster || entryDateString !== currentEntryDateString) {
+                    currentMaster = master;
+                    currentEntryDateString = entryDateString;
+                    
+                    let startHour = 7; // Default 7:00 AM
+                    let masterName = master ? master.toString().toUpperCase().trim() : "";
+                    
+                    if (masterName === "SRIDHAR" || masterName === "DHASARATHAN") {
+                        startHour = 5;
+                    } else if (masterName === "THIYAGARAJAN") {
+                        startHour = 6;
+                    } else if (masterName === "DEVAN") {
+                        startHour = 8;
+                    }
 
-    if(printedToday.has(selectedId)){
-        showStatus('Token already printed for this employee today', 'error');
-        return;
-    }
+                    currentStartTime = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), startHour, 0, 0, 0);
+                }
 
-    printedToday.add(selectedId);
+                const startDateTime = new Date(currentStartTime);
+                const endDateTime = new Date(startDateTime.getTime() + (totalMinutes * 60000)); // 60000ms = 1 min
 
-    previewNumber.textContent = tokenNumber;
+                // Update start time for next iteration
+                currentStartTime = new Date(endDateTime);
 
-    tokenCount.textContent = printedToday.size;
-
-    window.print();
-
-    tokenNumber++;
-
-    showStatus('Token printed successfully', 'success');
-}
-
-function resetSelection(){
-
-    employeeSelect.value = '';
-
-    employeeName.textContent = '-';
-    employeeSection.textContent = '-';
-    employeeTime.textContent = '-';
-
-    previewHeader.textContent = '5715 - KRISHNARAJ';
-    previewSlot.textContent = 'Sweet - 12:00 PM - 1:00 PM';
-    previewNumber.textContent = tokenNumber;
-
-    hideStatus();
-}
-
-function showStatus(message,type){
-
-    statusBox.style.display = 'block';
-    statusBox.textContent = message;
-    statusBox.className = `status ${type}`;
-}
-
-function hideStatus(){
-    statusBox.style.display = 'none';
-}
-</script>
-
+                // Preserve existing rows and overwrite required ones
+                return {
+                    'Entry Date': outEntryDate,
+                    'Master': master,
+                    'Product': product,
+                    'Target Qty': row['Target Qty'],
+                    'Start DateTime': formatDateTime(startDateTime),
+                    'End DateTime': formatDateTime(endDateTime)
+                };
+            });
+        }
+        
+        // Helper function for YYYY-MM-DD HH:mm:ss formatting
+        function formatDateTime(date) {
+            const pad = (n) => n.toString().padStart(2, '0');
+            const YYYY = date.getFullYear();
+            const MM = pad(date.getMonth() + 1);
+            const DD = pad(date.getDate());
+            
+            let hh = date.getHours();
+            let mm = pad(date.getMinutes());
+            let ss = pad(date.getSeconds());
+            
+            // Format to 24 Hour standard which translates well into Excel
+            return `${YYYY}-${MM}-${DD} ${pad(hh)}:${mm}:${ss}`;
+        }
+    </script>
 </body>
 </html>
