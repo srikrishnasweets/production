@@ -376,8 +376,8 @@
                     } else if (masterName === "DEVAN") {
                         startHour = 8;
                     }
-
-                    currentStartTime = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), startHour, 0, 0, 0);
+                    // Schedule starts on the next day of Entry Date
+                    currentStartTime = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + 1, startHour, 0, 0, 0);
                 }
 
                 const startDateTime = new Date(currentStartTime);
@@ -391,9 +391,9 @@
                     'Entry Date': outEntryDate,
                     'Master': master,
                     'Product': product,
-                    'Start Date': outEntryDate,
+                    'Start Date': formatDateTime(startDateTime).split(' ')[0],
                     'Start Time': formatDateTime(startDateTime).split(' ')[1].substring(0, 5),
-                    'End Date': outEntryDate,
+                    'End Date': formatDateTime(endDateTime).split(' ')[0],
                     'End Time': formatDateTime(endDateTime).split(' ')[1].substring(0, 5),
                     'Target Qty': row['Target Qty']
                 };
