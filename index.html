@@ -391,9 +391,11 @@
                     'Entry Date': outEntryDate,
                     'Master': master,
                     'Product': product,
-                    'Target Qty': row['Target Qty'],
-                    'Start DateTime': formatDateTime(startDateTime),
-                    'End DateTime': formatDateTime(endDateTime)
+                    'Start Date': outEntryDate,
+                    'Start Time': formatDateTime(startDateTime).split(' ')[1].substring(0, 5),
+                    'End Date': outEntryDate,
+                    'End Time': formatDateTime(endDateTime).split(' ')[1].substring(0, 5),
+                    'Target Qty': row['Target Qty']
                 };
             });
         }
