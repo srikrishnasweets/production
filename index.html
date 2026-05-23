@@ -442,8 +442,8 @@
                     throw new Error('Sheet named "tray" not found.');
                 }
                 const worksheet = workbook.Sheets[traySheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-                const outputRows = processTrayCounter(jsonData);
+                const rowsData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                const outputRows = processTrayCounter(rowsData);
 
                 const outSheet = XLSX.utils.json_to_sheet(outputRows);
                 const outBook = XLSX.utils.book_new();
@@ -557,8 +557,8 @@
             const nextDate = getNextDateFromTrayData(data);
 
             data.forEach((row) => {
-                const productRaw = getValueByHeader(row, ['Product']);
-                const qtyRaw = getValueByHeader(row, ['Qty']);
+                const productRaw = Array.isArray(row) ? row[0] : undefined;
+                const qtyRaw = Array.isArray(row) ? row[1] : undefined;
                 const product = String(productRaw ?? '').trim();
                 const qty = parseQty(qtyRaw);
                 if (!product || !Number.isFinite(qty) || qty <= 0) return;
@@ -632,9 +632,8 @@
         }
 
         function getNextDateFromTrayData(data) {
-            const dateHeaders = ['Entry Date', 'Date', 'Upload Date', 'Production Date'];
             for (const row of data) {
-                const raw = getValueByHeader(row, dateHeaders);
+                const raw = Array.isArray(row) ? row[2] : undefined;
                 const parsed = parseSheetDate(raw);
                 if (parsed) {
                     const next = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate() + 1);
