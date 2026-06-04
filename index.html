@@ -201,6 +201,38 @@
             margin-right: 8px;
             vertical-align: middle;
         }
+        
+        .template-guide {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: left;
+        }
+        .template-guide strong {
+            color: #60a5fa;
+        }
+        .guide-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .guide-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .guide-list li {
+            margin-bottom: 6px;
+        }
+        .guide-list li:last-child {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
@@ -215,7 +247,7 @@
 
         <div class="tab-panel active" id="schedulerPanel">
             <div class="upload-area" id="dropZone">
-                <svg xmlns="http://www.w3.org/-2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
                 <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here</div>
@@ -231,20 +263,45 @@
             <div class="loading" id="loadingStatus">
                 <span class="spinner"></span> <span id="loadingText">Fetching product times...</span>
             </div>
+
+            <div class="template-guide">
+                <div class="guide-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    Expected Excel Columns (First Sheet)
+                </div>
+                <ul class="guide-list">
+                    <li><strong>Entry Date</strong>: The date of scheduling</li>
+                    <li><strong>Master</strong>: Supervisor name (determines starting shifts)</li>
+                    <li><strong>Product</strong>: Name of the product</li>
+                    <li><strong>Target Qty</strong>: Production target quantity</li>
+                </ul>
+            </div>
         </div>
 
         <div class="tab-panel" id="trayPanel">
             <div class="upload-area" id="trayDropZone">
-                <svg xmlns="http://www.w3.org/-2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
                 <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Upload Tray Input Excel</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Need columns: Product and Qty</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "tray"</div>
                 <input type="file" id="trayFileInput" accept=".xlsx, .xls">
                 <div class="file-name" id="trayFileName"></div>
             </div>
 
             <button class="btn" id="trayProcessBtn">Generate Tray Counter Excel</button>
+
+            <div class="template-guide">
+                <div class="guide-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    Expected Excel Sheet Setup (Sheet Name: "tray")
+                </div>
+                <ul class="guide-list">
+                    <li>Column A (1st): <strong>Product</strong> - Product name</li>
+                    <li>Column B (2nd): <strong>Qty</strong> - Weight/qty per tray</li>
+                    <li>Column C (3rd): <strong>Date</strong> - Date used for packing calculations</li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -574,6 +631,7 @@
 
             const packStartText = formatDateWithTime(nextDate, 7, 0);
             const packEndText = formatDateWithTime(nextDate, 13, 0);
+            const handoverText = formatDateWithTime(nextDate, 14, 0);
             const rows = [];
 
             counts.forEach((productBucket) => {
@@ -586,7 +644,7 @@
                         'Tray Size (kg)': qtyValue,
                         'Tray Count': count,
                         'Pack (kg)': '',
-                        'Handover DateTime': ''
+                        'Handover DateTime': handoverText
                     });
                 });
             });
