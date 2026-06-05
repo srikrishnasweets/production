@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,10 +10,14 @@
     <style>
         /* Vanilla CSS - Premium, Modern, Glassmorphism */
         :root {
-            --bg-color: #0f172a; /* Slate 900 */
-            --card-bg: rgba(30, 41, 59, 0.7); /* Slate 800 with opacity */
-            --primary: #3b82f6; /* Blue 500 */
-            --primary-hover: #2563eb; /* Blue 600 */
+            --bg-color: #0f172a;
+            /* Slate 900 */
+            --card-bg: rgba(30, 41, 59, 0.7);
+            /* Slate 800 with opacity */
+            --primary: #3b82f6;
+            /* Blue 500 */
+            --primary-hover: #2563eb;
+            /* Blue 600 */
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --border-color: rgba(255, 255, 255, 0.1);
@@ -45,8 +50,15 @@
         }
 
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         h1 {
@@ -109,7 +121,8 @@
             margin-bottom: 30px;
         }
 
-        .upload-area:hover, .upload-area.dragover {
+        .upload-area:hover,
+        .upload-area.dragover {
             border-color: var(--primary);
             background: rgba(59, 130, 246, 0.05);
         }
@@ -176,7 +189,7 @@
         .btn.active:active {
             transform: translateY(0);
         }
-        
+
         .loading {
             display: none;
             text-align: center;
@@ -184,24 +197,27 @@
             color: var(--text-muted);
             font-size: 0.95rem;
         }
-        
+
 
         /* Spinner animation */
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
+
         .spinner {
             display: inline-block;
             width: 18px;
             height: 18px;
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
             animation: spin 1s ease-in-out infinite;
             margin-right: 8px;
             vertical-align: middle;
         }
-        
+
         .template-guide {
             margin-top: 20px;
             padding: 16px;
@@ -212,9 +228,11 @@
             color: var(--text-muted);
             text-align: left;
         }
+
         .template-guide strong {
             color: #60a5fa;
         }
+
         .guide-title {
             font-weight: 600;
             margin-bottom: 8px;
@@ -223,18 +241,22 @@
             align-items: center;
             gap: 6px;
         }
+
         .guide-list {
             margin: 0;
             padding-left: 20px;
         }
+
         .guide-list li {
             margin-bottom: 6px;
         }
+
         .guide-list li:last-child {
             margin-bottom: 0;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Production Scheduler</h1>
@@ -248,9 +270,11 @@
         <div class="tab-panel active" id="schedulerPanel">
             <div class="upload-area" id="dropZone">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here</div>
+                <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here
+                </div>
                 <div style="font-size: 0.85rem; color: var(--text-muted);">Supports .xlsx and .xls formats</div>
                 <input type="file" id="fileInput" accept=".xlsx, .xls">
                 <div class="file-name" id="fileName"></div>
@@ -259,29 +283,17 @@
             <button class="btn" id="processBtn">
                 Process & Download
             </button>
-            
+
             <div class="loading" id="loadingStatus">
                 <span class="spinner"></span> <span id="loadingText">Fetching product times...</span>
-            </div>
-
-            <div class="template-guide">
-                <div class="guide-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    Expected Excel Columns (First Sheet)
-                </div>
-                <ul class="guide-list">
-                    <li><strong>Entry Date</strong>: The date of scheduling</li>
-                    <li><strong>Master</strong>: Supervisor name (determines starting shifts)</li>
-                    <li><strong>Product</strong>: Name of the product</li>
-                    <li><strong>Target Qty</strong>: Production target quantity</li>
-                </ul>
             </div>
         </div>
 
         <div class="tab-panel" id="trayPanel">
             <div class="upload-area" id="trayDropZone">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
                 <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Upload Tray Input Excel</div>
                 <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "tray"</div>
@@ -290,25 +302,12 @@
             </div>
 
             <button class="btn" id="trayProcessBtn">Generate Tray Counter Excel</button>
-
-            <div class="template-guide">
-                <div class="guide-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    Expected Excel Sheet Setup (Sheet Name: "tray")
-                </div>
-                <ul class="guide-list">
-                    <li>Column A (1st): <strong>Product</strong> - Product name</li>
-                    <li>Column B (2nd): <strong>Qty</strong> - Weight/qty per tray</li>
-                    <li>Column C (3rd): <strong>Date</strong> - Date used for packing calculations</li>
-                </ul>
-            </div>
         </div>
     </div>
 
     <script>
-        // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
         const API_URL = "https://script.google.com/macros/s/AKfycbxwbB41ulTO3-tV6nZ2LQL30dzqCTUhflx7wTvxZQQEkCtZztW_7Y8PKZrqEo4XkqV85g/exec";
-        
+
         let selectedFile = null;
         let productAvgTimes = {};
         let productMasterMap = {};
@@ -333,7 +332,7 @@
         window.onload = async () => {
             loadingStatus.style.display = 'block';
             loadingText.innerText = 'Initializing... Fetching live Avg Times from Google Sheet';
-            
+
             try {
                 if (API_URL.includes("YOUR_URL_HERE")) {
                     alert("Please paste your Google Apps Script URL into the API_URL variable inside the schedule.html file!");
@@ -343,24 +342,62 @@
 
                 const response = await fetch(API_URL);
                 if (!response.ok) throw new Error('Network response was not ok');
-                
+
                 const apiData = await response.json();
-                productAvgTimes = (apiData && typeof apiData === 'object' && apiData.avgTimes) ? apiData.avgTimes : apiData;
-                if (!productAvgTimes || typeof productAvgTimes !== 'object') {
-                    productAvgTimes = {};
+
+                // Extract avgTimes/setTime and master robustly
+                productAvgTimes = {};
+                productMasterMap = {};
+
+                if (apiData && typeof apiData === 'object') {
+                    const setTimeSource = apiData.setTime || apiData.avgTimes || apiData;
+                    if (Array.isArray(setTimeSource)) {
+                        // New array format
+                        setTimeSource.forEach((item) => {
+                            if (!item) return;
+                            const productKey = normalizeProductKey(item.Product || item.product || item.PRODUCT);
+                            if (productKey) {
+                                const startMin = parseTimeToMinutes(item.Start || item.start);
+                                const endMin = parseTimeToMinutes(item.End || item.end);
+                                const diff = endMin - startMin;
+                                productAvgTimes[productKey] = diff > 0 ? diff : 0;
+                                const masterName = String(item.Master || item.master || item.MASTER || '').trim();
+                                if (masterName) {
+                                    productMasterMap[productKey] = masterName;
+                                }
+                            }
+                        });
+                    } else if (setTimeSource && typeof setTimeSource === 'object') {
+                        // Old object key-value format fallback
+                        Object.keys(setTimeSource).forEach((key) => {
+                            productAvgTimes[normalizeProductKey(key)] = Number(setTimeSource[key]) || 0;
+                        });
+                    }
                 }
 
-                productMasterMap = {};
+                // Parse master array from MASTER sheet as fallback
                 if (apiData && Array.isArray(apiData.master)) {
                     apiData.master.forEach((item) => {
-                        const productKey = normalizeProductKey(item && item.Product);
-                        const masterName = String(item && item.Master ? item.Master : '').trim();
+                        if (!item) return;
+                        let rawProduct = item.Product || item.product || item.PRODUCT;
+                        let rawMaster = item.Master || item.master || item.MASTER;
+                        if (rawProduct === undefined || rawMaster === undefined) {
+                            for (const k of Object.keys(item)) {
+                                if (k.toLowerCase() === 'product') rawProduct = item[k];
+                                if (k.toLowerCase() === 'master') rawMaster = item[k];
+                            }
+                        }
+                        const productKey = normalizeProductKey(rawProduct);
+                        const masterName = String(rawMaster || '').trim();
                         if (productKey && masterName) {
-                            productMasterMap[productKey] = masterName;
+                            // Only set if not already set by SETTIME sheet mapping
+                            if (!productMasterMap[productKey]) {
+                                productMasterMap[productKey] = masterName;
+                            }
                         }
                     });
                 }
-                
+
                 loadingStatus.style.display = 'none';
                 if (selectedFile) {
                     processBtn.classList.add('active');
@@ -465,10 +502,10 @@
 
                 // Generate and download Excel
                 XLSX.writeFile(newWorkbook, `Scheduled_${selectedFile.name}`);
-                
+
                 processBtn.innerHTML = 'Downloaded Successfully!';
                 processBtn.style.background = '#10b981'; // Emerald 500
-                
+
                 setTimeout(() => {
                     processBtn.innerHTML = 'Process & Download';
                     processBtn.style.background = 'var(--primary)';
@@ -525,59 +562,34 @@
         });
 
         function processSchedule(data) {
-            let currentMaster = null;
-            let currentEntryDateString = null;
-            let currentStartTime = null;
+            const today = new Date();
+            const nextDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+            const formattedDateStr = formatDateDMY(nextDate);
+
+            const masterCurrentTimes = {};
 
             return data.map((row) => {
-                const entryDateRaw = row['Entry Date'];
-                const master = row['Master'];
-                const product = row['Product'];
-                const targetQty = Number(row['Target Qty']) || 0;
+                // Find product and qty from row case-insensitively
+                let product = '';
+                let targetQty = 0;
 
-                let baseDate = new Date();
-                let entryDateString = '';
-                let outEntryDate = entryDateRaw; // Default output format
-
-                if (entryDateRaw) {
-                    if (entryDateRaw instanceof Date) {
-                        baseDate = new Date(entryDateRaw);
-                        entryDateString = `${baseDate.getFullYear()}-${baseDate.getMonth() + 1}-${baseDate.getDate()}`;
-                        outEntryDate = formatDateTime(baseDate).split(' ')[0]; // yyyy-mm-dd
-                    } else {
-                        baseDate = new Date(entryDateRaw);
-                        if (isNaN(baseDate.getTime())) {
-                            baseDate = new Date(); // fallback to today if invalid
-                        }
-                        entryDateString = String(entryDateRaw).trim();
-                        outEntryDate = entryDateRaw; // keep string format
+                for (const k of Object.keys(row)) {
+                    const lk = k.toLowerCase().trim();
+                    if (lk === 'product' || lk === 'product name' || lk === 'item' || lk === 'item name') {
+                        product = String(row[k]).trim();
+                    } else if (lk === 'target qty' || lk === 'qty' || lk === 'quantity' || lk === 'target quantity') {
+                        targetQty = Number(row[k]) || 0;
                     }
                 }
 
-                let prodKey = product ? product.toString().trim() : '';
-                let avgTime = productAvgTimes[prodKey];
-                
-                // If not found, try removing " BP" from the end, because the SETTIME sheet usually doesn't have " BP"
-                if (avgTime === undefined && prodKey.endsWith(' BP')) {
-                    const noBpKey = prodKey.substring(0, prodKey.length - 3).trim();
-                    avgTime = productAvgTimes[noBpKey];
-                }
-                
-                if (avgTime === undefined) {
-                    console.warn(`Avg Time not found for Product: ${product}`);
-                    avgTime = 0; // Assume 0 if not mapped
-                }
-
+                const master = getMasterNameForProduct(product);
+                const avgTime = getAvgTimeForProduct(product);
                 const totalMinutes = targetQty * avgTime;
 
-                // Reset time on new Master or new Date
-                if (master !== currentMaster || entryDateString !== currentEntryDateString) {
-                    currentMaster = master;
-                    currentEntryDateString = entryDateString;
-                    
+                if (!masterCurrentTimes[master]) {
                     let startHour = 7; // Default 7:00 AM
-                    let masterName = master ? master.toString().toUpperCase().trim() : "";
-                    
+                    let masterName = master ? master.toUpperCase().trim() : "";
+
                     if (masterName === "SRIDHAR" || masterName === "DHASARATHAN") {
                         startHour = 5;
                     } else if (masterName === "THIYAGARAJAN") {
@@ -585,26 +597,24 @@
                     } else if (masterName === "DEVAN") {
                         startHour = 8;
                     }
-                    // Schedule starts on the next day of Entry Date
-                    currentStartTime = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + 1, startHour, 0, 0, 0);
+                    masterCurrentTimes[master] = new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate(), startHour, 0, 0, 0);
                 }
 
-                const startDateTime = new Date(currentStartTime);
-                const endDateTime = new Date(startDateTime.getTime() + (totalMinutes * 60000)); // 60000ms = 1 min
+                const startDateTime = new Date(masterCurrentTimes[master]);
+                const endDateTime = new Date(startDateTime.getTime() + (totalMinutes * 60000));
 
-                // Update start time for next iteration
-                currentStartTime = new Date(endDateTime);
+                // Update start time for next iteration of this master
+                masterCurrentTimes[master] = new Date(endDateTime);
 
-                // Preserve existing rows and overwrite required ones
                 return {
-                    'Entry Date': outEntryDate,
+                    'Entry Date': formattedDateStr,
                     'Master': master,
                     'Product': product,
-                    'Start Date': formatDateTime(startDateTime).split(' ')[0],
-                    'Start Time': formatDateTime(startDateTime).split(' ')[1].substring(0, 5),
-                    'End Date': formatDateTime(endDateTime).split(' ')[0],
-                    'End Time': formatDateTime(endDateTime).split(' ')[1].substring(0, 5),
-                    'Target Qty': row['Target Qty']
+                    'Start Date': formattedDateStr,
+                    'Start Time': formatTimeHM(startDateTime),
+                    'End Date': formattedDateStr,
+                    'End Time': formatTimeHM(endDateTime),
+                    'Target Qty': targetQty
                 };
             });
         }
@@ -685,8 +695,56 @@
         }
 
         function getMasterNameForProduct(productName) {
-            const key = normalizeProductKey(productName);
-            return productMasterMap[key] || '';
+            let key = normalizeProductKey(productName);
+            if (productMasterMap[key] !== undefined) {
+                return productMasterMap[key];
+            }
+            if (key.endsWith(' BP')) {
+                const noBpKey = key.substring(0, key.length - 3).trim();
+                if (productMasterMap[noBpKey] !== undefined) {
+                    return productMasterMap[noBpKey];
+                }
+            }
+            const withBpKey = key + ' BP';
+            if (productMasterMap[withBpKey] !== undefined) {
+                return productMasterMap[withBpKey];
+            }
+            return '';
+        }
+
+        function parseAvgTime(val) {
+            const num = Number(val);
+            if (isNaN(num)) return 0;
+            if (num < 0) {
+                try {
+                    const date = new Date(num);
+                    if (!isNaN(date.getTime())) {
+                        return date.getHours() + (date.getMinutes() / 60) + (date.getSeconds() / 3600);
+                    }
+                } catch (e) {
+                    console.error("Error parsing negative time:", e);
+                }
+            }
+            return num;
+        }
+
+        function getAvgTimeForProduct(productName) {
+            let key = normalizeProductKey(productName);
+            let val = 0;
+            if (productAvgTimes[key] !== undefined) {
+                val = productAvgTimes[key];
+            } else if (key.endsWith(' BP')) {
+                const noBpKey = key.substring(0, key.length - 3).trim();
+                if (productAvgTimes[noBpKey] !== undefined) {
+                    val = productAvgTimes[noBpKey];
+                }
+            } else {
+                const withBpKey = key + ' BP';
+                if (productAvgTimes[withBpKey] !== undefined) {
+                    val = productAvgTimes[withBpKey];
+                }
+            }
+            return parseAvgTime(val);
         }
 
         function getNextDateFromTrayData(data) {
@@ -721,20 +779,42 @@
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
         }
 
+        function formatDateDMY(date) {
+            const pad = (n) => String(n).padStart(2, '0');
+            const DD = pad(date.getDate());
+            const MM = pad(date.getMonth() + 1);
+            const YYYY = date.getFullYear();
+            return `${DD}-${MM}-${YYYY}`;
+        }
+
+        function formatTimeHM(date) {
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function parseTimeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const parts = String(timeStr).split(':');
+            const hh = parseInt(parts[0], 10) || 0;
+            const mm = parseInt(parts[1], 10) || 0;
+            return (hh * 60) + mm;
+        }
+
         // Helper function for YYYY-MM-DD HH:mm:ss formatting
         function formatDateTime(date) {
             const pad = (n) => n.toString().padStart(2, '0');
             const YYYY = date.getFullYear();
             const MM = pad(date.getMonth() + 1);
             const DD = pad(date.getDate());
-            
+
             let hh = date.getHours();
             let mm = pad(date.getMinutes());
             let ss = pad(date.getSeconds());
-            
+
             // Format to 24 Hour standard which translates well into Excel
             return `${YYYY}-${MM}-${DD} ${pad(hh)}:${mm}:${ss}`;
         }
     </script>
 </body>
+
 </html>
