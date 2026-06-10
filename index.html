@@ -273,9 +273,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Supports .xlsx and .xls formats</div>
+                <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "pro"</div>
                 <input type="file" id="fileInput" accept=".xlsx, .xls">
                 <div class="file-name" id="fileName"></div>
             </div>
@@ -286,6 +285,21 @@
 
             <div class="loading" id="loadingStatus">
                 <span class="spinner"></span> <span id="loadingText">Fetching product times...</span>
+            </div>
+
+            <div class="template-guide">
+                <div class="guide-title">
+                    <svg style="width:16px;height:16px;stroke:currentColor;fill:none;" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Required Excel Template Format
+                </div>
+                <ul class="guide-list">
+                    <li>Sheet name must be exactly <strong>"pro"</strong> (case-insensitive).</li>
+                    <li>First column (A): <strong>Product</strong> (any header name).</li>
+                    <li>Second column (B): <strong>Qty</strong> (any header name).</li>
+                    <li>Third column (C, Optional): <strong>Date</strong> (used to determine the schedule date).</li>
+                </ul>
             </div>
         </div>
 
@@ -302,6 +316,21 @@
             </div>
 
             <button class="btn" id="trayProcessBtn">Generate Tray Counter Excel</button>
+
+            <div class="template-guide">
+                <div class="guide-title">
+                    <svg style="width:16px;height:16px;stroke:currentColor;fill:none;" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Required Excel Template Format
+                </div>
+                <ul class="guide-list">
+                    <li>Sheet name must be exactly <strong>"tray"</strong> (case-insensitive).</li>
+                    <li>First column (A): <strong>Product Name</strong>.</li>
+                    <li>Second column (B): <strong>Qty</strong>.</li>
+                    <li>Third column (C, Optional): <strong>Date</strong>.</li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -309,7 +338,8 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxwbB41ulTO3-tV6nZ2LQL30dzqCTUhflx7wTvxZQQEkCtZztW_7Y8PKZrqEo4XkqV85g/exec";
 
         let selectedFile = null;
-        let productAvgTimes = {};
+        let productStartTimes = {};
+        let productEndTimes = {};
         let productMasterMap = {};
 
         const fileInput = document.getElementById('fileInput');
@@ -345,8 +375,9 @@
 
                 const apiData = await response.json();
 
-                // Extract avgTimes/setTime and master robustly
-                productAvgTimes = {};
+                // Extract times and master robustly
+                productStartTimes = {};
+                productEndTimes = {};
                 productMasterMap = {};
 
                 if (apiData && typeof apiData === 'object') {
@@ -357,20 +388,13 @@
                             if (!item) return;
                             const productKey = normalizeProductKey(item.Product || item.product || item.PRODUCT);
                             if (productKey) {
-                                const startMin = parseTimeToMinutes(item.Start || item.start);
-                                const endMin = parseTimeToMinutes(item.End || item.end);
-                                const diff = endMin - startMin;
-                                productAvgTimes[productKey] = diff > 0 ? diff : 0;
+                                productStartTimes[productKey] = String(item.Start || item.start || '07:00').trim();
+                                productEndTimes[productKey] = String(item.End || item.end || '16:00').trim();
                                 const masterName = String(item.Master || item.master || item.MASTER || '').trim();
                                 if (masterName) {
                                     productMasterMap[productKey] = masterName;
                                 }
                             }
-                        });
-                    } else if (setTimeSource && typeof setTimeSource === 'object') {
-                        // Old object key-value format fallback
-                        Object.keys(setTimeSource).forEach((key) => {
-                            productAvgTimes[normalizeProductKey(key)] = Number(setTimeSource[key]) || 0;
                         });
                     }
                 }
@@ -447,7 +471,7 @@
             selectedFile = file;
             fileNameDiv.textContent = file.name;
             fileNameDiv.style.display = 'block';
-            if (Object.keys(productAvgTimes).length > 0) {
+            if (Object.keys(productStartTimes).length > 0) {
                 processBtn.classList.add('active');
             }
         }
@@ -487,13 +511,17 @@
             try {
                 const data = await selectedFile.arrayBuffer();
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                // Read sheet to JSON
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                const proSheetName = workbook.SheetNames.find((name) => String(name).trim().toLowerCase() === 'pro');
+                if (!proSheetName) {
+                    throw new Error('Sheet named "pro" not found in the uploaded file.');
+                }
+                const worksheet = workbook.Sheets[proSheetName];
+                
+                // Read sheet as raw array of arrays to handle columns by position
+                const rowsData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
 
                 // Process logic
-                const processedData = processSchedule(jsonData);
+                const processedData = processSchedule(rowsData);
 
                 // Convert processed data back to sheet
                 const newWorksheet = XLSX.utils.json_to_sheet(processedData);
@@ -515,7 +543,7 @@
 
             } catch (error) {
                 console.error(error);
-                alert('Error processing file. Check console for details.');
+                alert('Error processing file. Make sure the file has a sheet named "pro". ' + error.message);
                 processBtn.innerHTML = 'Process & Download';
                 processBtn.disabled = false;
                 processBtn.style.opacity = '1';
@@ -561,62 +589,96 @@
             }
         });
 
+        function getNextDateFromProData(data) {
+            for (const row of data) {
+                const raw = Array.isArray(row) ? row[2] : undefined;
+                const parsed = parseSheetDate(raw);
+                if (parsed) {
+                    const next = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate() + 1);
+                    return next;
+                }
+            }
+            const now = new Date();
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        }
+
+        function getStartTimeForProduct(productName) {
+            let key = normalizeProductKey(productName);
+            if (productStartTimes[key] !== undefined) {
+                return productStartTimes[key];
+            }
+            if (key.endsWith(' BP')) {
+                const noBpKey = key.substring(0, key.length - 3).trim();
+                if (productStartTimes[noBpKey] !== undefined) {
+                    return productStartTimes[noBpKey];
+                }
+            }
+            const withBpKey = key + ' BP';
+            if (productStartTimes[withBpKey] !== undefined) {
+                return productStartTimes[withBpKey];
+            }
+            return '';
+        }
+
+        function getEndTimeForProduct(productName) {
+            let key = normalizeProductKey(productName);
+            if (productEndTimes[key] !== undefined) {
+                return productEndTimes[key];
+            }
+            if (key.endsWith(' BP')) {
+                const noBpKey = key.substring(0, key.length - 3).trim();
+                if (productEndTimes[noBpKey] !== undefined) {
+                    return productEndTimes[noBpKey];
+                }
+            }
+            const withBpKey = key + ' BP';
+            if (productEndTimes[withBpKey] !== undefined) {
+                return productEndTimes[withBpKey];
+            }
+            return '';
+        }
+
         function processSchedule(data) {
-            const today = new Date();
-            const nextDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+            const nextDate = getNextDateFromProData(data);
             const formattedDateStr = formatDateDMY(nextDate);
 
-            const masterCurrentTimes = {};
+            const processedRows = [];
 
-            return data.map((row) => {
-                // Find product and qty from row case-insensitively
-                let product = '';
-                let targetQty = 0;
+            data.forEach((row) => {
+                const productRaw = Array.isArray(row) ? row[0] : undefined;
+                const qtyRaw = Array.isArray(row) ? row[1] : undefined;
+                
+                const product = String(productRaw ?? '').trim();
+                const qty = parseQty(qtyRaw);
 
-                for (const k of Object.keys(row)) {
-                    const lk = k.toLowerCase().trim();
-                    if (lk === 'product' || lk === 'product name' || lk === 'item' || lk === 'item name') {
-                        product = String(row[k]).trim();
-                    } else if (lk === 'target qty' || lk === 'qty' || lk === 'quantity' || lk === 'target quantity') {
-                        targetQty = Number(row[k]) || 0;
-                    }
+                // Skip headers or empty rows or if qty is 0 or negative
+                if (!product || !Number.isFinite(qty) || qty <= 0) {
+                    return;
+                }
+
+                // Skip header matching keywords if they are in the first row
+                const normalizedProd = product.toLowerCase();
+                if (normalizedProd === 'product' || normalizedProd === 'product name' || normalizedProd === 'item' || normalizedProd === 'item name') {
+                    return;
                 }
 
                 const master = getMasterNameForProduct(product);
-                const avgTime = getAvgTimeForProduct(product);
-                const totalMinutes = targetQty * avgTime;
+                const startTime = getStartTimeForProduct(product);
+                const endTime = getEndTimeForProduct(product);
 
-                if (!masterCurrentTimes[master]) {
-                    let startHour = 7; // Default 7:00 AM
-                    let masterName = master ? master.toUpperCase().trim() : "";
-
-                    if (masterName === "SRIDHAR" || masterName === "DHASARATHAN") {
-                        startHour = 5;
-                    } else if (masterName === "THIYAGARAJAN") {
-                        startHour = 6;
-                    } else if (masterName === "DEVAN") {
-                        startHour = 8;
-                    }
-                    masterCurrentTimes[master] = new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate(), startHour, 0, 0, 0);
-                }
-
-                const startDateTime = new Date(masterCurrentTimes[master]);
-                const endDateTime = new Date(startDateTime.getTime() + (totalMinutes * 60000));
-
-                // Update start time for next iteration of this master
-                masterCurrentTimes[master] = new Date(endDateTime);
-
-                return {
+                processedRows.push({
                     'Entry Date': formattedDateStr,
                     'Master': master,
                     'Product': product,
                     'Start Date': formattedDateStr,
-                    'Start Time': formatTimeHM(startDateTime),
+                    'Start Time': startTime,
                     'End Date': formattedDateStr,
-                    'End Time': formatTimeHM(endDateTime),
-                    'Target Qty': targetQty
-                };
+                    'End Time': endTime,
+                    'Target Qty': qty
+                });
             });
+
+            return processedRows;
         }
 
         function processTrayCounter(data) {
@@ -639,22 +701,24 @@
                 bucket.qtyMap.set(qtyKey, (bucket.qtyMap.get(qtyKey) || 0) + 1);
             });
 
-            const packStartText = formatDateWithTime(nextDate, 7, 0);
-            const packEndText = formatDateWithTime(nextDate, 13, 0);
-            const handoverText = formatDateWithTime(nextDate, 14, 0);
+            const formattedDateStr = formatDateDMY(nextDate);
             const rows = [];
 
             counts.forEach((productBucket) => {
                 productBucket.qtyMap.forEach((count, qtyValue) => {
+                    const isLoose = qtyValue === 1;
                     rows.push({
                         'Master Name': getMasterNameForProduct(productBucket.productName),
                         'Product Name': productBucket.productName,
-                        'Pack Start': packStartText,
-                        'Pack End': packEndText,
+                        'Pack Start Date': formattedDateStr,
+                        'Pack Start Time': '07:00',
+                        'Pack End Date': formattedDateStr,
+                        'Pack End Time': '13:00',
                         'Tray Size (kg)': qtyValue,
                         'Tray Count': count,
                         'Pack (kg)': '',
-                        'Handover DateTime': handoverText
+                        'Handover Date': isLoose ? '' : formattedDateStr,
+                        'Handover Time': isLoose ? '' : '14:00'
                     });
                 });
             });
