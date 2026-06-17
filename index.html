@@ -273,8 +273,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "pro"</div>
+                <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "Production" or "pro"</div>
                 <input type="file" id="fileInput" accept=".xlsx, .xls">
                 <div class="file-name" id="fileName"></div>
             </div>
@@ -290,12 +291,13 @@
             <div class="template-guide">
                 <div class="guide-title">
                     <svg style="width:16px;height:16px;stroke:currentColor;fill:none;" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Required Excel Template Format
                 </div>
                 <ul class="guide-list">
-                    <li>Sheet name must be exactly <strong>"pro"</strong> (case-insensitive).</li>
+                    <li>Sheet name must be exactly <strong>"Production"</strong> or <strong>"pro"</strong> (case-insensitive).</li>
                     <li>First column (A): <strong>Product</strong> (any header name).</li>
                     <li>Second column (B): <strong>Qty</strong> (any header name).</li>
                     <li>Third column (C, Optional): <strong>Date</strong> (used to determine the schedule date).</li>
@@ -310,7 +312,7 @@
                         d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
                 <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Upload Tray Input Excel</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "tray"</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "Tray" or "tray"</div>
                 <input type="file" id="trayFileInput" accept=".xlsx, .xls">
                 <div class="file-name" id="trayFileName"></div>
             </div>
@@ -320,12 +322,13 @@
             <div class="template-guide">
                 <div class="guide-title">
                     <svg style="width:16px;height:16px;stroke:currentColor;fill:none;" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Required Excel Template Format
                 </div>
                 <ul class="guide-list">
-                    <li>Sheet name must be exactly <strong>"tray"</strong> (case-insensitive).</li>
+                    <li>Sheet name must be exactly <strong>"Tray"</strong> or <strong>"tray"</strong> (case-insensitive).</li>
                     <li>First column (A): <strong>Product Name</strong>.</li>
                     <li>Second column (B): <strong>Qty</strong>.</li>
                     <li>Third column (C, Optional): <strong>Date</strong>.</li>
@@ -341,6 +344,8 @@
         let productStartTimes = {};
         let productEndTimes = {};
         let productMasterMap = {};
+        let trayStartTimes = {};
+        let trayEndTimes = {};
 
         const fileInput = document.getElementById('fileInput');
         const dropZone = document.getElementById('dropZone');
@@ -379,6 +384,8 @@
                 productStartTimes = {};
                 productEndTimes = {};
                 productMasterMap = {};
+                trayStartTimes = {};
+                trayEndTimes = {};
 
                 if (apiData && typeof apiData === 'object') {
                     const setTimeSource = apiData.setTime || apiData.avgTimes || apiData;
@@ -405,18 +412,28 @@
                         if (!item) return;
                         let rawProduct = item.Product || item.product || item.PRODUCT;
                         let rawMaster = item.Master || item.master || item.MASTER;
+                        let rawStart = item["Start Time"] || item["start time"] || item.Start || item.start || item.START || item["START TIME"];
+                        let rawEnd = item["End Time"] || item["end time"] || item.End || item.end || item.END || item["END TIME"];
+
                         if (rawProduct === undefined || rawMaster === undefined) {
                             for (const k of Object.keys(item)) {
                                 if (k.toLowerCase() === 'product') rawProduct = item[k];
                                 if (k.toLowerCase() === 'master') rawMaster = item[k];
+                                if (k.toLowerCase() === 'start time' || k.toLowerCase() === 'start') rawStart = item[k];
+                                if (k.toLowerCase() === 'end time' || k.toLowerCase() === 'end') rawEnd = item[k];
                             }
                         }
                         const productKey = normalizeProductKey(rawProduct);
                         const masterName = String(rawMaster || '').trim();
-                        if (productKey && masterName) {
-                            // Only set if not already set by SETTIME sheet mapping
-                            if (!productMasterMap[productKey]) {
+                        if (productKey) {
+                            if (masterName && !productMasterMap[productKey]) {
                                 productMasterMap[productKey] = masterName;
+                            }
+                            if (rawStart) {
+                                trayStartTimes[productKey] = String(rawStart).trim();
+                            }
+                            if (rawEnd) {
+                                trayEndTimes[productKey] = String(rawEnd).trim();
                             }
                         }
                     });
@@ -511,12 +528,12 @@
             try {
                 const data = await selectedFile.arrayBuffer();
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const proSheetName = workbook.SheetNames.find((name) => String(name).trim().toLowerCase() === 'pro');
+                const proSheetName = workbook.SheetNames.find((name) => ['production', 'pro'].includes(String(name).trim().toLowerCase()));
                 if (!proSheetName) {
-                    throw new Error('Sheet named "pro" not found in the uploaded file.');
+                    throw new Error('Sheet named "Production" or "pro" not found in the uploaded file.');
                 }
                 const worksheet = workbook.Sheets[proSheetName];
-                
+
                 // Read sheet as raw array of arrays to handle columns by position
                 const rowsData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
 
@@ -543,7 +560,7 @@
 
             } catch (error) {
                 console.error(error);
-                alert('Error processing file. Make sure the file has a sheet named "pro". ' + error.message);
+                alert('Error processing file. Make sure the file has a sheet named "Production" or "pro". ' + error.message);
                 processBtn.innerHTML = 'Process & Download';
                 processBtn.disabled = false;
                 processBtn.style.opacity = '1';
@@ -559,9 +576,9 @@
             try {
                 const data = await traySelectedFile.arrayBuffer();
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const traySheetName = workbook.SheetNames.find((name) => String(name).trim().toLowerCase() === 'tray');
+                const traySheetName = workbook.SheetNames.find((name) => ['tray', 'tray counter'].includes(String(name).trim().toLowerCase()));
                 if (!traySheetName) {
-                    throw new Error('Sheet named "tray" not found.');
+                    throw new Error('Sheet named "Tray" or "tray" not found.');
                 }
                 const worksheet = workbook.Sheets[traySheetName];
                 const rowsData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
@@ -582,16 +599,16 @@
                 }, 3000);
             } catch (error) {
                 console.error(error);
-                alert('Error processing tray counter file. Please check Product and Qty columns.');
+                alert('Error processing tray counter file. Make sure the file has a sheet named "Tray" or "tray".');
                 trayProcessBtn.innerHTML = 'Generate Tray Counter Excel';
-                trayProcessBtn.disabled = false;
+                                trayProcessBtn.disabled = false;
                 trayProcessBtn.style.opacity = '1';
             }
         });
 
-        function getNextDateFromProData(data) {
+        function getNextDateFromProData(data, dateIdx) {
             for (const row of data) {
-                const raw = Array.isArray(row) ? row[2] : undefined;
+                const raw = Array.isArray(row) ? row[dateIdx] : undefined;
                 const parsed = parseSheetDate(raw);
                 if (parsed) {
                     const next = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate() + 1);
@@ -638,20 +655,81 @@
             return '';
         }
 
+        function getTrayStartTimeForProduct(productName) {
+            let key = normalizeProductKey(productName);
+            if (trayStartTimes[key] !== undefined) {
+                return trayStartTimes[key];
+            }
+            if (key.endsWith(' BP')) {
+                const noBpKey = key.substring(0, key.length - 3).trim();
+                if (trayStartTimes[noBpKey] !== undefined) {
+                    return trayStartTimes[noBpKey];
+                }
+            }
+            const withBpKey = key + ' BP';
+            if (trayStartTimes[withBpKey] !== undefined) {
+                return trayStartTimes[withBpKey];
+            }
+            return getStartTimeForProduct(productName);
+        }
+
+        function getTrayEndTimeForProduct(productName) {
+            let key = normalizeProductKey(productName);
+            if (trayEndTimes[key] !== undefined) {
+                return trayEndTimes[key];
+            }
+            if (key.endsWith(' BP')) {
+                const noBpKey = key.substring(0, key.length - 3).trim();
+                if (trayEndTimes[noBpKey] !== undefined) {
+                    return trayEndTimes[noBpKey];
+                }
+            }
+            const withBpKey = key + ' BP';
+            if (trayEndTimes[withBpKey] !== undefined) {
+                return trayEndTimes[withBpKey];
+            }
+            return getEndTimeForProduct(productName);
+        }
+
         function processSchedule(data) {
-            const nextDate = getNextDateFromProData(data);
+            if (data.length < 1) return [];
+            const headers = (data[0] || []).map(h => String(h ?? '').trim().toLowerCase());
+
+            function findColumnIndex(candidates, defaultIdx) {
+                for (const candidate of candidates) {
+                    const idx = headers.indexOf(candidate);
+                    if (idx !== -1) return idx;
+                }
+                for (const candidate of candidates) {
+                    for (let k = 0; k < headers.length; k++) {
+                        if (headers[k].includes(candidate)) {
+                            return k;
+                        }
+                    }
+                }
+                return defaultIdx;
+            }
+
+            const productIdx = findColumnIndex(["product", "item"], 0);
+            const qtyIdx = findColumnIndex(["qty", "quantity", "count"], 1);
+            const dateIdx = findColumnIndex(["date"], 2);
+
+            const nextDate = getNextDateFromProData(data, dateIdx);
             const formattedDateStr = formatDateDMY(nextDate);
 
             const processedRows = [];
 
-            data.forEach((row) => {
-                const productRaw = Array.isArray(row) ? row[0] : undefined;
-                const qtyRaw = Array.isArray(row) ? row[1] : undefined;
-                
+            data.forEach((row, i) => {
+                // Skip header row
+                if (i === 0) return;
+
+                const productRaw = Array.isArray(row) ? row[productIdx] : undefined;
+                const qtyRaw = Array.isArray(row) ? row[qtyIdx] : undefined;
+
                 const product = String(productRaw ?? '').trim();
                 const qty = parseQty(qtyRaw);
 
-                // Skip headers or empty rows or if qty is 0 or negative
+                // Skip empty rows or if qty is 0 or negative
                 if (!product || !Number.isFinite(qty) || qty <= 0) {
                     return;
                 }
@@ -682,12 +760,37 @@
         }
 
         function processTrayCounter(data) {
-            const counts = new Map();
-            const nextDate = getNextDateFromTrayData(data);
+            if (data.length < 1) return [];
+            const headers = (data[0] || []).map(h => String(h ?? '').trim().toLowerCase());
 
-            data.forEach((row) => {
-                const productRaw = Array.isArray(row) ? row[0] : undefined;
-                const qtyRaw = Array.isArray(row) ? row[1] : undefined;
+            function findColumnIndex(candidates, defaultIdx) {
+                for (const candidate of candidates) {
+                    const idx = headers.indexOf(candidate);
+                    if (idx !== -1) return idx;
+                }
+                for (const candidate of candidates) {
+                    for (let k = 0; k < headers.length; k++) {
+                        if (headers[k].includes(candidate)) {
+                            return k;
+                        }
+                    }
+                }
+                return defaultIdx;
+            }
+
+            const productIdx = findColumnIndex(["product", "item"], 0);
+            const qtyIdx = findColumnIndex(["qty", "quantity", "count"], 1);
+            const dateIdx = findColumnIndex(["date"], 2);
+
+            const counts = new Map();
+            const nextDate = getNextDateFromTrayData(data, dateIdx);
+
+            data.forEach((row, i) => {
+                // Skip header row
+                if (i === 0) return;
+
+                const productRaw = Array.isArray(row) ? row[productIdx] : undefined;
+                const qtyRaw = Array.isArray(row) ? row[qtyIdx] : undefined;
                 const product = String(productRaw ?? '').trim();
                 const qty = parseQty(qtyRaw);
                 if (!product || !Number.isFinite(qty) || qty <= 0) return;
@@ -706,19 +809,22 @@
 
             counts.forEach((productBucket) => {
                 productBucket.qtyMap.forEach((count, qtyValue) => {
-                    const isLoose = qtyValue === 1;
+                    const startTime = getTrayStartTimeForProduct(productBucket.productName) || '07:00';
+                    const baseEndTime = getTrayEndTimeForProduct(productBucket.productName) || '13:00';
+                    const adjustedEndTime = addMinutesToTime(baseEndTime, 3 * count);
+                    const handoverTime = addMinutesToTime(adjustedEndTime, 5);
                     rows.push({
                         'Master Name': getMasterNameForProduct(productBucket.productName),
                         'Product Name': productBucket.productName,
                         'Pack Start Date': formattedDateStr,
-                        'Pack Start Time': '07:00',
+                        'Pack Start Time': startTime,
                         'Pack End Date': formattedDateStr,
-                        'Pack End Time': '13:00',
+                        'Pack End Time': adjustedEndTime,
                         'Tray Size (kg)': qtyValue,
                         'Tray Count': count,
                         'Pack (kg)': '',
-                        'Handover Date': isLoose ? '' : formattedDateStr,
-                        'Handover Time': isLoose ? '' : '14:00'
+                        'Handover Date': formattedDateStr,
+                        'Handover Time': handoverTime
                     });
                 });
             });
@@ -811,9 +917,9 @@
             return parseAvgTime(val);
         }
 
-        function getNextDateFromTrayData(data) {
+        function getNextDateFromTrayData(data, dateIdx) {
             for (const row of data) {
-                const raw = Array.isArray(row) ? row[2] : undefined;
+                const raw = Array.isArray(row) ? row[dateIdx] : undefined;
                 const parsed = parseSheetDate(raw);
                 if (parsed) {
                     const next = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate() + 1);
@@ -848,7 +954,7 @@
             const DD = pad(date.getDate());
             const MM = pad(date.getMonth() + 1);
             const YYYY = date.getFullYear();
-            return `${DD}-${MM}-${YYYY}`;
+            return `${YYYY}-${MM}-${DD}`;
         }
 
         function formatTimeHM(date) {
@@ -862,6 +968,16 @@
             const hh = parseInt(parts[0], 10) || 0;
             const mm = parseInt(parts[1], 10) || 0;
             return (hh * 60) + mm;
+        }
+
+        function addMinutesToTime(timeStr, minutesOffset) {
+            if (!timeStr) return '';
+            let mins = parseTimeToMinutes(timeStr);
+            mins += minutesOffset;
+            const hh = Math.floor(mins / 60) % 24;
+            const mm = mins % 60;
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${pad(hh)}:${pad(mm)}`;
         }
 
         // Helper function for YYYY-MM-DD HH:mm:ss formatting
