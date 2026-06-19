@@ -275,7 +275,8 @@
                 </svg>
                 <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here
                 </div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "Production" or "pro"</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "Production" or "pro"
+                </div>
                 <input type="file" id="fileInput" accept=".xlsx, .xls">
                 <div class="file-name" id="fileName"></div>
             </div>
@@ -297,7 +298,8 @@
                     Required Excel Template Format
                 </div>
                 <ul class="guide-list">
-                    <li>Sheet name must be exactly <strong>"Production"</strong> or <strong>"pro"</strong> (case-insensitive).</li>
+                    <li>Sheet name must be exactly <strong>"Production"</strong> or <strong>"pro"</strong>
+                        (case-insensitive).</li>
                     <li>First column (A): <strong>Product</strong> (any header name).</li>
                     <li>Second column (B): <strong>Qty</strong> (any header name).</li>
                     <li>Third column (C, Optional): <strong>Date</strong> (used to determine the schedule date).</li>
@@ -328,7 +330,8 @@
                     Required Excel Template Format
                 </div>
                 <ul class="guide-list">
-                    <li>Sheet name must be exactly <strong>"Tray"</strong> or <strong>"tray"</strong> (case-insensitive).</li>
+                    <li>Sheet name must be exactly <strong>"Tray"</strong> or <strong>"tray"</strong>
+                        (case-insensitive).</li>
                     <li>First column (A): <strong>Product Name</strong>.</li>
                     <li>Second column (B): <strong>Qty</strong>.</li>
                     <li>Third column (C, Optional): <strong>Date</strong>.</li>
@@ -601,7 +604,7 @@
                 console.error(error);
                 alert('Error processing tray counter file. Make sure the file has a sheet named "Tray" or "tray".');
                 trayProcessBtn.innerHTML = 'Generate Tray Counter Excel';
-                                trayProcessBtn.disabled = false;
+                trayProcessBtn.disabled = false;
                 trayProcessBtn.style.opacity = '1';
             }
         });
@@ -710,8 +713,8 @@
                 return defaultIdx;
             }
 
-            const productIdx = findColumnIndex(["product", "item"], 0);
-            const qtyIdx = findColumnIndex(["qty", "quantity", "count"], 1);
+            const productIdx = findColumnIndex(["product", "item", "BP"], 0);
+            const qtyIdx = findColumnIndex(["qty", "quantity", "count", "PRODUCTION PLAN QTY"], 1);
             const dateIdx = findColumnIndex(["date"], 2);
 
             const nextDate = getNextDateFromProData(data, dateIdx);
@@ -778,8 +781,8 @@
                 return defaultIdx;
             }
 
-            const productIdx = findColumnIndex(["product", "item"], 0);
-            const qtyIdx = findColumnIndex(["qty", "quantity", "count"], 1);
+            const productIdx = findColumnIndex(["product", "item", "BP"], 0);
+            const qtyIdx = findColumnIndex(["qty", "quantity", "count", "PRODUCTION PLAN QTY"], 1);
             const dateIdx = findColumnIndex(["date"], 2);
 
             const counts = new Map();
