@@ -1,1003 +1,446 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Production Scheduling Tool</title>
-    <!-- Include SheetJS (xlsx) for Excel processing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        /* Vanilla CSS - Premium, Modern, Glassmorphism */
-        :root {
-            --bg-color: #0f172a;
-            /* Slate 900 */
-            --card-bg: rgba(30, 41, 59, 0.7);
-            /* Slate 800 with opacity */
-            --primary: #3b82f6;
-            /* Blue 500 */
-            --primary-hover: #2563eb;
-            /* Blue 600 */
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border-color: rgba(255, 255, 255, 0.1);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production Dashboard</title>
+  <!-- SheetJS for Excel processing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+    }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
 
-        .container {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 40px;
-            width: 100%;
-            max-width: 550px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
 
-        h1 {
-            font-size: 1.85rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-            text-align: center;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.02em;
-        }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+      text-align: center;
+    }
 
-        p.subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            margin-bottom: 35px;
-            font-size: 1rem;
-        }
+    .form-group {
+      margin-bottom: 20px;
+    }
 
-        .tabs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 24px;
-        }
+    label.field-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
 
-        .tab-btn {
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.04);
-            color: var(--text-main);
-            padding: 12px;
-            cursor: pointer;
-            font-weight: 600;
-        }
+    input[type="text"],
+    input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
 
-        .tab-btn.active {
-            background: var(--primary);
-            border-color: var(--primary);
-        }
+    input[type="text"]:focus,
+    input[type="date"]:focus {
+      border-color: var(--primary);
+    }
 
-        .tab-panel {
-            display: none;
-        }
+    /* Styled Upload Area */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
 
-        .tab-panel.active {
-            display: block;
-        }
+    .upload-area.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
 
-        .upload-area {
-            border: 2px dashed var(--border-color);
-            border-radius: 16px;
-            padding: 50px 20px;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-            background: rgba(255, 255, 255, 0.02);
-            margin-bottom: 30px;
-        }
+    .upload-area:not(.disabled):hover {
+      border-color: var(--primary);
+      background: #eff6ff;
+    }
 
-        .upload-area:hover,
-        .upload-area.dragover {
-            border-color: var(--primary);
-            background: rgba(59, 130, 246, 0.05);
-        }
+    .upload-icon {
+      font-size: 1.8rem;
+      color: var(--text-muted);
+    }
 
-        .upload-area svg {
-            width: 54px;
-            height: 54px;
-            color: var(--primary);
-            margin-bottom: 15px;
-            transition: transform 0.3s ease;
-        }
+    .upload-text {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
 
-        .upload-area:hover svg {
-            transform: translateY(-5px);
-        }
+    .upload-text span {
+      color: var(--primary);
+      font-weight: 600;
+    }
 
-        .upload-area input[type="file"] {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-        }
+    .file-name-display {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--success);
+      margin-top: 8px;
+      word-break: break-all;
+      display: none;
+      text-align: center;
+    }
 
-        .file-name {
-            margin-top: 15px;
-            font-size: 0.95rem;
-            color: #60a5fa;
-            word-break: break-all;
-            display: none;
-            font-weight: 500;
-        }
+    .btn {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
 
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 14px;
-            background: var(--primary);
-            color: white;
-            font-size: 1.05rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
-            opacity: 0.5;
-            pointer-events: none;
-        }
+    .btn:hover {
+      background: var(--primary-hover);
+    }
 
-        .btn.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+    .btn:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
 
-        .btn.active:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
-        }
+    .status-message {
+      margin-top: 16px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      text-align: center;
+      display: none;
+    }
 
-        .btn.active:active {
-            transform: translateY(0);
-        }
+    .status-message.success {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
 
-        .loading {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
+    .status-message.error {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      display: block;
+    }
 
-
-        /* Spinner animation */
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-
-        .template-guide {
-            margin-top: 20px;
-            padding: 16px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px dashed var(--border-color);
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-align: left;
-        }
-
-        .template-guide strong {
-            color: #60a5fa;
-        }
-
-        .guide-title {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .guide-list {
-            margin: 0;
-            padding-left: 20px;
-        }
-
-        .guide-list li {
-            margin-bottom: 6px;
-        }
-
-        .guide-list li:last-child {
-            margin-bottom: 0;
-        }
-    </style>
+    .status-message.info {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      display: block;
+    }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <h1>Production Scheduler</h1>
-        <p class="subtitle">Time Scheduler and Tray Counter</p>
 
-        <div class="tabs">
-            <button class="tab-btn active" id="tabSchedulerBtn" type="button">Time Scheduler</button>
-            <button class="tab-btn" id="tabTrayBtn" type="button">Tray Counter</button>
-        </div>
+  <div class="card">
+    <h1>Production Dashboard</h1>
+    <p class="subtitle">Upload Excel to generate Entry Sheets</p>
 
-        <div class="tab-panel active" id="schedulerPanel">
-            <div class="upload-area" id="dropZone">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Click or drag Excel file here
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "Production" or "pro"
-                </div>
-                <input type="file" id="fileInput" accept=".xlsx, .xls">
-                <div class="file-name" id="fileName"></div>
-            </div>
-
-            <button class="btn" id="processBtn">
-                Process & Download
-            </button>
-
-            <div class="loading" id="loadingStatus">
-                <span class="spinner"></span> <span id="loadingText">Fetching product times...</span>
-            </div>
-
-            <div class="template-guide">
-                <div class="guide-title">
-                    <svg style="width:16px;height:16px;stroke:currentColor;fill:none;" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Required Excel Template Format
-                </div>
-                <ul class="guide-list">
-                    <li>Sheet name must be exactly <strong>"Production"</strong> or <strong>"pro"</strong>
-                        (case-insensitive).</li>
-                    <li>First column (A): <strong>Product</strong> (any header name).</li>
-                    <li>Second column (B): <strong>Qty</strong> (any header name).</li>
-                    <li>Third column (C, Optional): <strong>Date</strong> (used to determine the schedule date).</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="tab-panel" id="trayPanel">
-            <div class="upload-area" id="trayDropZone">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <div style="font-weight: 500; font-size: 1.1rem; margin-bottom: 6px;">Upload Tray Input Excel</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Requires sheet named "Tray" or "tray"</div>
-                <input type="file" id="trayFileInput" accept=".xlsx, .xls">
-                <div class="file-name" id="trayFileName"></div>
-            </div>
-
-            <button class="btn" id="trayProcessBtn">Generate Tray Counter Excel</button>
-
-            <div class="template-guide">
-                <div class="guide-title">
-                    <svg style="width:16px;height:16px;stroke:currentColor;fill:none;" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Required Excel Template Format
-                </div>
-                <ul class="guide-list">
-                    <li>Sheet name must be exactly <strong>"Tray"</strong> or <strong>"tray"</strong>
-                        (case-insensitive).</li>
-                    <li>First column (A): <strong>Product Name</strong>.</li>
-                    <li>Second column (B): <strong>Qty</strong>.</li>
-                    <li>Third column (C, Optional): <strong>Date</strong>.</li>
-                </ul>
-            </div>
-        </div>
+    <div class="form-group">
+      <label class="field-label" for="issuedBy">Issued By</label>
+      <input type="text" id="issuedBy" placeholder="Enter name...">
     </div>
 
-    <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxwbB41ulTO3-tV6nZ2LQL30dzqCTUhflx7wTvxZQQEkCtZztW_7Y8PKZrqEo4XkqV85g/exec";
+    <div class="form-group">
+      <label class="field-label" for="deliveryDate">Delivery Date</label>
+      <input type="date" id="deliveryDate">
+    </div>
 
-        let selectedFile = null;
-        let productStartTimes = {};
-        let productEndTimes = {};
-        let productMasterMap = {};
-        let trayStartTimes = {};
-        let trayEndTimes = {};
+    <div class="form-group">
+      <label class="field-label">Upload Excel File</label>
+      <label for="fileInput" class="upload-area disabled" id="uploadLabel">
+        <div class="upload-icon">📁</div>
+        <div class="upload-text" id="uploadText">API loading, please wait...</div>
+        <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" disabled>
+      </label>
+      <div class="file-name-display" id="fileNameDisplay"></div>
+    </div>
 
-        const fileInput = document.getElementById('fileInput');
-        const dropZone = document.getElementById('dropZone');
-        const fileNameDiv = document.getElementById('fileName');
-        const processBtn = document.getElementById('processBtn');
-        const loadingStatus = document.getElementById('loadingStatus');
-        const loadingText = document.getElementById('loadingText');
-        const tabSchedulerBtn = document.getElementById('tabSchedulerBtn');
-        const tabTrayBtn = document.getElementById('tabTrayBtn');
-        const schedulerPanel = document.getElementById('schedulerPanel');
-        const trayPanel = document.getElementById('trayPanel');
-        const trayFileInput = document.getElementById('trayFileInput');
-        const trayDropZone = document.getElementById('trayDropZone');
-        const trayFileName = document.getElementById('trayFileName');
-        const trayProcessBtn = document.getElementById('trayProcessBtn');
-        let traySelectedFile = null;
+    <button id="processBtn" class="btn" disabled>Generate & Download Files</button>
+    
+    <div id="status" class="status-message"></div>
+  </div>
 
-        // Fetch Avg Times on load using standard fetch GET request
-        window.onload = async () => {
-            loadingStatus.style.display = 'block';
-            loadingText.innerText = 'Initializing... Fetching live Avg Times from Google Sheet';
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycby-t__7U1IJMhRn19dOgAeZhbk7JXt99K22xFxaAXjBleNF-6-UxcCDwIhejZl9oesebA/exec';
+    
+    let apiData = [];
+    const issuedByInput = document.getElementById('issuedBy');
+    const deliveryDateInput = document.getElementById('deliveryDate');
+    const fileInput = document.getElementById('fileInput');
+    const uploadLabel = document.getElementById('uploadLabel');
+    const uploadText = document.getElementById('uploadText');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const processBtn = document.getElementById('processBtn');
+    const statusDiv = document.getElementById('status');
 
-            try {
-                if (API_URL.includes("YOUR_URL_HERE")) {
-                    alert("Please paste your Google Apps Script URL into the API_URL variable inside the schedule.html file!");
-                    loadingText.innerText = 'API URL Missing.';
-                    return;
-                }
+    // Set Default Date to Today
+    function setDefaultDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      let mm = today.getMonth() + 1;
+      let dd = today.getDate();
+      if (mm < 10) mm = '0' + mm;
+      if (dd < 10) dd = '0' + dd;
+      deliveryDateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
 
-                const response = await fetch(API_URL);
-                if (!response.ok) throw new Error('Network response was not ok');
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = `status-message ${type}`;
+    }
 
-                const apiData = await response.json();
+    // Fetch master API data on load
+    async function loadApiData() {
+      showStatus('Loading master API data...', 'info');
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Failed to fetch from API');
+        apiData = await response.json();
+        
+        // Enable file input & styled upload area
+        fileInput.disabled = false;
+        uploadLabel.classList.remove('disabled');
+        uploadText.innerHTML = '<span>Click to upload</span> or drag & drop';
+        
+        showStatus('Master data synced successfully. Ready to process.', 'info');
+        checkFormValidity();
+      } catch (error) {
+        console.error(error);
+        showStatus('Error syncing master data. Check connection.', 'error');
+      }
+    }
 
-                // Extract times and master robustly
-                productStartTimes = {};
-                productEndTimes = {};
-                productMasterMap = {};
-                trayStartTimes = {};
-                trayEndTimes = {};
+    function checkFormValidity() {
+      const hasIssuedBy = issuedByInput.value.trim() !== '';
+      const hasDate = deliveryDateInput.value !== '';
+      const hasFile = fileInput.files.length > 0;
+      processBtn.disabled = !(hasIssuedBy && hasDate && hasFile && apiData.length > 0);
+    }
 
-                if (apiData && typeof apiData === 'object') {
-                    const setTimeSource = apiData.setTime || apiData.avgTimes || apiData;
-                    if (Array.isArray(setTimeSource)) {
-                        // New array format
-                        setTimeSource.forEach((item) => {
-                            if (!item) return;
-                            const productKey = normalizeProductKey(item.Product || item.product || item.PRODUCT);
-                            if (productKey) {
-                                productStartTimes[productKey] = String(item.Start || item.start || '07:00').trim();
-                                productEndTimes[productKey] = String(item.End || item.end || '16:00').trim();
-                                const masterName = String(item.Master || item.master || item.MASTER || '').trim();
-                                if (masterName) {
-                                    productMasterMap[productKey] = masterName;
-                                }
-                            }
-                        });
-                    }
-                }
+    [issuedByInput, deliveryDateInput].forEach(el => el.addEventListener('input', checkFormValidity));
+    
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        const name = e.target.files[0].name;
+        fileNameDisplay.textContent = `Selected: ${name}`;
+        fileNameDisplay.style.display = 'block';
+      } else {
+        fileNameDisplay.style.display = 'none';
+      }
+      checkFormValidity();
+    });
 
-                // Parse master array from MASTER sheet as fallback
-                if (apiData && Array.isArray(apiData.master)) {
-                    apiData.master.forEach((item) => {
-                        if (!item) return;
-                        let rawProduct = item.Product || item.product || item.PRODUCT;
-                        let rawMaster = item.Master || item.master || item.MASTER;
-                        let rawStart = item["Start Time"] || item["start time"] || item.Start || item.start || item.START || item["START TIME"];
-                        let rawEnd = item["End Time"] || item["end time"] || item.End || item.end || item.END || item["END TIME"];
+    // Drag & Drop effects for Styled Upload Label
+    uploadLabel.addEventListener('dragover', (e) => {
+      if (fileInput.disabled) return;
+      e.preventDefault();
+      uploadLabel.style.borderColor = 'var(--primary)';
+      uploadLabel.style.background = '#eff6ff';
+    });
 
-                        if (rawProduct === undefined || rawMaster === undefined) {
-                            for (const k of Object.keys(item)) {
-                                if (k.toLowerCase() === 'product') rawProduct = item[k];
-                                if (k.toLowerCase() === 'master') rawMaster = item[k];
-                                if (k.toLowerCase() === 'start time' || k.toLowerCase() === 'start') rawStart = item[k];
-                                if (k.toLowerCase() === 'end time' || k.toLowerCase() === 'end') rawEnd = item[k];
-                            }
-                        }
-                        const productKey = normalizeProductKey(rawProduct);
-                        const masterName = String(rawMaster || '').trim();
-                        if (productKey) {
-                            if (masterName && !productMasterMap[productKey]) {
-                                productMasterMap[productKey] = masterName;
-                            }
-                            if (rawStart) {
-                                trayStartTimes[productKey] = String(rawStart).trim();
-                            }
-                            if (rawEnd) {
-                                trayEndTimes[productKey] = String(rawEnd).trim();
-                            }
-                        }
-                    });
-                }
+    uploadLabel.addEventListener('dragleave', () => {
+      if (fileInput.disabled) return;
+      uploadLabel.style.borderColor = '';
+      uploadLabel.style.background = '';
+    });
 
-                loadingStatus.style.display = 'none';
-                if (selectedFile) {
-                    processBtn.classList.add('active');
-                }
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                loadingText.innerText = 'Error loading Avg Times. Please check your API URL or internet connection.';
-                loadingText.style.color = '#ef4444';
-            }
-        };
+    uploadLabel.addEventListener('drop', (e) => {
+      if (fileInput.disabled) return;
+      e.preventDefault();
+      uploadLabel.style.borderColor = '';
+      uploadLabel.style.background = '';
+      
+      if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        // Trigger change event programmatically
+        fileInput.dispatchEvent(new Event('change'));
+      }
+    });
 
-        tabSchedulerBtn.addEventListener('click', () => switchTab('scheduler'));
-        tabTrayBtn.addEventListener('click', () => switchTab('tray'));
+    function formatDateDMY(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`; // yyyy-mm-dd -> dd-mm-yyyy
+      }
+      return dateStr;
+    }
 
-        function switchTab(tab) {
-            const schedulerActive = tab === 'scheduler';
-            tabSchedulerBtn.classList.toggle('active', schedulerActive);
-            tabTrayBtn.classList.toggle('active', !schedulerActive);
-            schedulerPanel.classList.toggle('active', schedulerActive);
-            trayPanel.classList.toggle('active', !schedulerActive);
-        }
+    function getTodayDateDMY() {
+      const today = new Date();
+      let dd = today.getDate();
+      let mm = today.getMonth() + 1;
+      const yyyy = today.getFullYear();
+      if (dd < 10) dd = '0' + dd;
+      if (mm < 10) mm = '0' + mm;
+      return `${dd}-${mm}-${yyyy}`;
+    }
 
-        // File Selection Handlers
-        fileInput.addEventListener('change', (e) => {
-            handleFileSelect(e.target.files[0]);
-        });
+    processBtn.addEventListener('click', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
 
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+      showStatus('Processing excel...', 'info');
 
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          let targetSheetName = workbook.SheetNames.find(s => s.trim().toUpperCase() === 'SET');
+          if (!targetSheetName) {
+            targetSheetName = workbook.SheetNames[0];
+          }
+          
+          const worksheet = workbook.Sheets[targetSheetName];
+          const sheetJson = XLSX.utils.sheet_to_json(worksheet);
+          
+          if (sheetJson.length === 0) {
+            showStatus('The uploaded sheet is empty.', 'error');
+            return;
+          }
 
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) {
-                handleFileSelect(e.dataTransfer.files[0]);
-            }
-        });
+          // Parse columns by sequence (1st column is Product/Set Name, 2nd column is Quantity)
+          const uploadedRows = sheetJson.map(row => {
+            const keys = Object.keys(row);
+            const firstKey = keys[0];
+            const secondKey = keys[1];
+            return {
+              set: firstKey ? String(row[firstKey] || '').trim() : '',
+              qty: secondKey ? Number(row[secondKey] || 0) : 0
+            };
+          }).filter(row => row.set !== '');
 
-        function handleFileSelect(file) {
-            if (!file) return;
-            selectedFile = file;
-            fileNameDiv.textContent = file.name;
-            fileNameDiv.style.display = 'block';
-            if (Object.keys(productStartTimes).length > 0) {
-                processBtn.classList.add('active');
-            }
-        }
+          if (uploadedRows.length === 0) {
+            showStatus('No rows with SET & QTY column found.', 'error');
+            return;
+          }
 
-        trayFileInput.addEventListener('change', (e) => handleTrayFileSelect(e.target.files[0]));
-        trayDropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            trayDropZone.classList.add('dragover');
-        });
-        trayDropZone.addEventListener('dragleave', () => trayDropZone.classList.remove('dragover'));
-        trayDropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            trayDropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) handleTrayFileSelect(e.dataTransfer.files[0]);
-        });
+          const issuedBy = issuedByInput.value.trim();
+          const deliveryDateFormatted = formatDateDMY(deliveryDateInput.value);
+          const todayDate = getTodayDateDMY();
 
-        function handleTrayFileSelect(file) {
-            if (!file) return;
-            traySelectedFile = file;
-            trayFileName.textContent = file.name;
-            trayFileName.style.display = 'block';
-            updateTrayButtonState();
-        }
+          const setEntryData = [];
+          const prodEntryData = [];
 
-        function updateTrayButtonState() {
-            const ready = !!traySelectedFile;
-            trayProcessBtn.classList.toggle('active', ready);
-        }
-
-        processBtn.addEventListener('click', async () => {
-            if (!selectedFile) return;
-
-            processBtn.disabled = true;
-            processBtn.innerHTML = '<span class="spinner"></span> Processing...';
-            processBtn.style.opacity = '0.8';
-
-            try {
-                const data = await selectedFile.arrayBuffer();
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const proSheetName = workbook.SheetNames.find((name) => ['production', 'pro'].includes(String(name).trim().toLowerCase()));
-                if (!proSheetName) {
-                    throw new Error('Sheet named "Production" or "pro" not found in the uploaded file.');
-                }
-                const worksheet = workbook.Sheets[proSheetName];
-
-                // Read sheet as raw array of arrays to handle columns by position
-                const rowsData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-
-                // Process logic
-                const processedData = processSchedule(rowsData);
-
-                // Convert processed data back to sheet
-                const newWorksheet = XLSX.utils.json_to_sheet(processedData);
-                const newWorkbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Schedule');
-
-                // Generate and download Excel
-                XLSX.writeFile(newWorkbook, `Scheduled_${selectedFile.name}`);
-
-                processBtn.innerHTML = 'Downloaded Successfully!';
-                processBtn.style.background = '#10b981'; // Emerald 500
-
-                setTimeout(() => {
-                    processBtn.innerHTML = 'Process & Download';
-                    processBtn.style.background = 'var(--primary)';
-                    processBtn.disabled = false;
-                    processBtn.style.opacity = '1';
-                }, 3000);
-
-            } catch (error) {
-                console.error(error);
-                alert('Error processing file. Make sure the file has a sheet named "Production" or "pro". ' + error.message);
-                processBtn.innerHTML = 'Process & Download';
-                processBtn.disabled = false;
-                processBtn.style.opacity = '1';
-            }
-        });
-
-        trayProcessBtn.addEventListener('click', async () => {
-            if (!traySelectedFile) return;
-            trayProcessBtn.disabled = true;
-            trayProcessBtn.innerHTML = '<span class="spinner"></span> Processing...';
-            trayProcessBtn.style.opacity = '0.8';
-
-            try {
-                const data = await traySelectedFile.arrayBuffer();
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const traySheetName = workbook.SheetNames.find((name) => ['tray', 'tray counter'].includes(String(name).trim().toLowerCase()));
-                if (!traySheetName) {
-                    throw new Error('Sheet named "Tray" or "tray" not found.');
-                }
-                const worksheet = workbook.Sheets[traySheetName];
-                const rowsData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-                const outputRows = processTrayCounter(rowsData);
-
-                const outSheet = XLSX.utils.json_to_sheet(outputRows);
-                const outBook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(outBook, outSheet, 'Tray Packing Import');
-                XLSX.writeFile(outBook, 'TrayPackingImport_Template.xlsx');
-
-                trayProcessBtn.innerHTML = 'Downloaded Successfully!';
-                trayProcessBtn.style.background = '#10b981';
-                setTimeout(() => {
-                    trayProcessBtn.innerHTML = 'Generate Tray Counter Excel';
-                    trayProcessBtn.style.background = 'var(--primary)';
-                    trayProcessBtn.disabled = false;
-                    trayProcessBtn.style.opacity = '1';
-                }, 3000);
-            } catch (error) {
-                console.error(error);
-                alert('Error processing tray counter file. Make sure the file has a sheet named "Tray" or "tray".');
-                trayProcessBtn.innerHTML = 'Generate Tray Counter Excel';
-                trayProcessBtn.disabled = false;
-                trayProcessBtn.style.opacity = '1';
-            }
-        });
-
-        function getNextDateFromProData(data, dateIdx) {
-            for (const row of data) {
-                const raw = Array.isArray(row) ? row[dateIdx] : undefined;
-                const parsed = parseSheetDate(raw);
-                if (parsed) {
-                    const next = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate() + 1);
-                    return next;
-                }
-            }
-            const now = new Date();
-            return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        }
-
-        function getStartTimeForProduct(productName) {
-            let key = normalizeProductKey(productName);
-            if (productStartTimes[key] !== undefined) {
-                return productStartTimes[key];
-            }
-            if (key.endsWith(' BP')) {
-                const noBpKey = key.substring(0, key.length - 3).trim();
-                if (productStartTimes[noBpKey] !== undefined) {
-                    return productStartTimes[noBpKey];
-                }
-            }
-            const withBpKey = key + ' BP';
-            if (productStartTimes[withBpKey] !== undefined) {
-                return productStartTimes[withBpKey];
-            }
-            return '';
-        }
-
-        function getEndTimeForProduct(productName) {
-            let key = normalizeProductKey(productName);
-            if (productEndTimes[key] !== undefined) {
-                return productEndTimes[key];
-            }
-            if (key.endsWith(' BP')) {
-                const noBpKey = key.substring(0, key.length - 3).trim();
-                if (productEndTimes[noBpKey] !== undefined) {
-                    return productEndTimes[noBpKey];
-                }
-            }
-            const withBpKey = key + ' BP';
-            if (productEndTimes[withBpKey] !== undefined) {
-                return productEndTimes[withBpKey];
-            }
-            return '';
-        }
-
-        function getTrayStartTimeForProduct(productName) {
-            let key = normalizeProductKey(productName);
-            if (trayStartTimes[key] !== undefined) {
-                return trayStartTimes[key];
-            }
-            if (key.endsWith(' BP')) {
-                const noBpKey = key.substring(0, key.length - 3).trim();
-                if (trayStartTimes[noBpKey] !== undefined) {
-                    return trayStartTimes[noBpKey];
-                }
-            }
-            const withBpKey = key + ' BP';
-            if (trayStartTimes[withBpKey] !== undefined) {
-                return trayStartTimes[withBpKey];
-            }
-            return getStartTimeForProduct(productName);
-        }
-
-        function getTrayEndTimeForProduct(productName) {
-            let key = normalizeProductKey(productName);
-            if (trayEndTimes[key] !== undefined) {
-                return trayEndTimes[key];
-            }
-            if (key.endsWith(' BP')) {
-                const noBpKey = key.substring(0, key.length - 3).trim();
-                if (trayEndTimes[noBpKey] !== undefined) {
-                    return trayEndTimes[noBpKey];
-                }
-            }
-            const withBpKey = key + ' BP';
-            if (trayEndTimes[withBpKey] !== undefined) {
-                return trayEndTimes[withBpKey];
-            }
-            return getEndTimeForProduct(productName);
-        }
-
-        function processSchedule(data) {
-            if (data.length < 1) return [];
-            const headers = (data[0] || []).map(h => String(h ?? '').trim().toLowerCase());
-
-            function findColumnIndex(candidates, defaultIdx) {
-                for (const candidate of candidates) {
-                    const idx = headers.indexOf(candidate);
-                    if (idx !== -1) return idx;
-                }
-                for (const candidate of candidates) {
-                    for (let k = 0; k < headers.length; k++) {
-                        if (headers[k].includes(candidate)) {
-                            return k;
-                        }
-                    }
-                }
-                return defaultIdx;
-            }
-
-            const productIdx = findColumnIndex(["product", "item", "BP"], 0);
-            const qtyIdx = findColumnIndex(["qty", "quantity", "count", "PRODUCTION PLAN QTY"], 1);
-            const dateIdx = findColumnIndex(["date"], 2);
-
-            const nextDate = getNextDateFromProData(data, dateIdx);
-            const formattedDateStr = formatDateDMY(nextDate);
-
-            const processedRows = [];
-
-            data.forEach((row, i) => {
-                // Skip header row
-                if (i === 0) return;
-
-                const productRaw = Array.isArray(row) ? row[productIdx] : undefined;
-                const qtyRaw = Array.isArray(row) ? row[qtyIdx] : undefined;
-
-                const product = String(productRaw ?? '').trim();
-                const qty = parseQty(qtyRaw);
-
-                // Skip empty rows or if qty is 0 or negative
-                if (!product || !Number.isFinite(qty) || qty <= 0) {
-                    return;
-                }
-
-                // Skip header matching keywords if they are in the first row
-                const normalizedProd = product.toLowerCase();
-                if (normalizedProd === 'product' || normalizedProd === 'product name' || normalizedProd === 'item' || normalizedProd === 'item name') {
-                    return;
-                }
-
-                const master = getMasterNameForProduct(product);
-                const startTime = getStartTimeForProduct(product);
-                const endTime = getEndTimeForProduct(product);
-
-                processedRows.push({
-                    'Entry Date': formattedDateStr,
-                    'Master': master,
-                    'Product': product,
-                    'Start Date': formattedDateStr,
-                    'Start Time': startTime,
-                    'End Date': formattedDateStr,
-                    'End Time': endTime,
-                    'Target Qty': qty
-                });
+          uploadedRows.forEach(row => {
+            // Set Entry Columns
+            setEntryData.push({
+              'Product Name': row.set,
+              'Quantity': row.qty,
+              'Issued By': issuedBy,
+              'Delivery Date': deliveryDateFormatted
             });
 
-            return processedRows;
-        }
-
-        function processTrayCounter(data) {
-            if (data.length < 1) return [];
-            const headers = (data[0] || []).map(h => String(h ?? '').trim().toLowerCase());
-
-            function findColumnIndex(candidates, defaultIdx) {
-                for (const candidate of candidates) {
-                    const idx = headers.indexOf(candidate);
-                    if (idx !== -1) return idx;
-                }
-                for (const candidate of candidates) {
-                    for (let k = 0; k < headers.length; k++) {
-                        if (headers[k].includes(candidate)) {
-                            return k;
-                        }
-                    }
-                }
-                return defaultIdx;
-            }
-
-            const productIdx = findColumnIndex(["product", "item", "BP"], 0);
-            const qtyIdx = findColumnIndex(["qty", "quantity", "count", "PRODUCTION PLAN QTY"], 1);
-            const dateIdx = findColumnIndex(["date"], 2);
-
-            const counts = new Map();
-            const nextDate = getNextDateFromTrayData(data, dateIdx);
-
-            data.forEach((row, i) => {
-                // Skip header row
-                if (i === 0) return;
-
-                const productRaw = Array.isArray(row) ? row[productIdx] : undefined;
-                const qtyRaw = Array.isArray(row) ? row[qtyIdx] : undefined;
-                const product = String(productRaw ?? '').trim();
-                const qty = parseQty(qtyRaw);
-                if (!product || !Number.isFinite(qty) || qty <= 0) return;
-
-                const normalizedProduct = product.toUpperCase();
-                if (!counts.has(normalizedProduct)) {
-                    counts.set(normalizedProduct, { productName: product, qtyMap: new Map() });
-                }
-                const bucket = counts.get(normalizedProduct);
-                const qtyKey = Number(qty.toFixed(3));
-                bucket.qtyMap.set(qtyKey, (bucket.qtyMap.get(qtyKey) || 0) + 1);
+            // Compare to Master API Data
+            const match = apiData.find(item => item.Set && item.Set.trim().toLowerCase() === row.set.toLowerCase());
+            
+            prodEntryData.push({
+              'Entry Date': todayDate,
+              'Master': match ? (match.Master || '') : 'NOT FOUND',
+              'Product': match ? (match.BP || '') : 'NOT FOUND',
+              'Start Date': deliveryDateFormatted,
+              'Start Time': match ? (match.StartTime || '') : '',
+              'End Date': deliveryDateFormatted,
+              'End Time': match ? (match.EndTime || '') : '',
+              'Target Set': row.qty
             });
+          });
 
-            const formattedDateStr = formatDateDMY(nextDate);
-            const rows = [];
+          // Generate File 1: Set Entry
+          const ws1 = XLSX.utils.json_to_sheet(setEntryData);
+          const wb1 = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb1, ws1, "Set Entry");
+          XLSX.writeFile(wb1, `${todayDate} Set Entry.xlsx`);
 
-            counts.forEach((productBucket) => {
-                productBucket.qtyMap.forEach((count, qtyValue) => {
-                    const startTime = getTrayStartTimeForProduct(productBucket.productName) || '07:00';
-                    const baseEndTime = getTrayEndTimeForProduct(productBucket.productName) || '13:00';
-                    const adjustedEndTime = addMinutesToTime(baseEndTime, 3 * count);
-                    const handoverTime = addMinutesToTime(adjustedEndTime, 5);
-                    rows.push({
-                        'Master Name': getMasterNameForProduct(productBucket.productName),
-                        'Product Name': productBucket.productName,
-                        'Pack Start Date': formattedDateStr,
-                        'Pack Start Time': startTime,
-                        'Pack End Date': formattedDateStr,
-                        'Pack End Time': adjustedEndTime,
-                        'Tray Size (kg)': qtyValue,
-                        'Tray Count': count,
-                        'Pack (kg)': '',
-                        'Handover Date': formattedDateStr,
-                        'Handover Time': handoverTime
-                    });
-                });
-            });
+          // Generate File 2: Production Entry
+          const ws2 = XLSX.utils.json_to_sheet(prodEntryData);
+          const wb2 = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb2, ws2, "Production Entry");
+          XLSX.writeFile(wb2, `${todayDate} Production Entry.xlsx`);
 
-            rows.sort((a, b) => {
-                const productCompare = String(a['Product Name']).localeCompare(String(b['Product Name']));
-                if (productCompare !== 0) return productCompare;
-                return Number(a['Tray Size (kg)']) - Number(b['Tray Size (kg)']);
-            });
-
-            return rows;
+          showStatus('Files generated and downloaded successfully!', 'success');
+        } catch (err) {
+          console.error(err);
+          showStatus('Failed to process Excel file.', 'error');
         }
+      };
+      
+      reader.readAsArrayBuffer(file);
+    });
 
-        function parseQty(value) {
-            if (typeof value === 'number') return value;
-            const cleaned = String(value ?? '')
-                .trim()
-                .replace(/,/g, '')
-                .replace(/[^\d.\-]/g, '');
-            if (!cleaned) return NaN;
-            const n = Number(cleaned);
-            return Number.isFinite(n) ? n : NaN;
-        }
-
-        function getValueByHeader(row, expectedHeaders) {
-            const keys = Object.keys(row || {});
-            const normalizedMap = new Map();
-            keys.forEach((k) => normalizedMap.set(String(k).trim().toLowerCase(), row[k]));
-            for (const header of expectedHeaders) {
-                const v = normalizedMap.get(String(header).trim().toLowerCase());
-                if (v !== undefined) return v;
-            }
-            return undefined;
-        }
-
-        function normalizeProductKey(value) {
-            return String(value ?? '').trim().replace(/\s+/g, ' ').toUpperCase();
-        }
-
-        function getMasterNameForProduct(productName) {
-            let key = normalizeProductKey(productName);
-            if (productMasterMap[key] !== undefined) {
-                return productMasterMap[key];
-            }
-            if (key.endsWith(' BP')) {
-                const noBpKey = key.substring(0, key.length - 3).trim();
-                if (productMasterMap[noBpKey] !== undefined) {
-                    return productMasterMap[noBpKey];
-                }
-            }
-            const withBpKey = key + ' BP';
-            if (productMasterMap[withBpKey] !== undefined) {
-                return productMasterMap[withBpKey];
-            }
-            return '';
-        }
-
-        function parseAvgTime(val) {
-            const num = Number(val);
-            if (isNaN(num)) return 0;
-            if (num < 0) {
-                try {
-                    const date = new Date(num);
-                    if (!isNaN(date.getTime())) {
-                        return date.getHours() + (date.getMinutes() / 60) + (date.getSeconds() / 3600);
-                    }
-                } catch (e) {
-                    console.error("Error parsing negative time:", e);
-                }
-            }
-            return num;
-        }
-
-        function getAvgTimeForProduct(productName) {
-            let key = normalizeProductKey(productName);
-            let val = 0;
-            if (productAvgTimes[key] !== undefined) {
-                val = productAvgTimes[key];
-            } else if (key.endsWith(' BP')) {
-                const noBpKey = key.substring(0, key.length - 3).trim();
-                if (productAvgTimes[noBpKey] !== undefined) {
-                    val = productAvgTimes[noBpKey];
-                }
-            } else {
-                const withBpKey = key + ' BP';
-                if (productAvgTimes[withBpKey] !== undefined) {
-                    val = productAvgTimes[withBpKey];
-                }
-            }
-            return parseAvgTime(val);
-        }
-
-        function getNextDateFromTrayData(data, dateIdx) {
-            for (const row of data) {
-                const raw = Array.isArray(row) ? row[dateIdx] : undefined;
-                const parsed = parseSheetDate(raw);
-                if (parsed) {
-                    const next = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate() + 1);
-                    return next;
-                }
-            }
-            const now = new Date();
-            return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        }
-
-        function parseSheetDate(value) {
-            if (value instanceof Date && !isNaN(value.getTime())) return value;
-            if (typeof value === 'number' && Number.isFinite(value)) {
-                const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-                const d = new Date(excelEpoch.getTime() + (value * 86400000));
-                return isNaN(d.getTime()) ? null : d;
-            }
-            const s = String(value ?? '').trim();
-            if (!s) return null;
-            const d = new Date(s);
-            return isNaN(d.getTime()) ? null : d;
-        }
-
-        function formatDateWithTime(date, hour, minute) {
-            const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, 0, 0);
-            const pad = (n) => String(n).padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        }
-
-        function formatDateDMY(date) {
-            const pad = (n) => String(n).padStart(2, '0');
-            const DD = pad(date.getDate());
-            const MM = pad(date.getMonth() + 1);
-            const YYYY = date.getFullYear();
-            return `${YYYY}-${MM}-${DD}`;
-        }
-
-        function formatTimeHM(date) {
-            const pad = (n) => String(n).padStart(2, '0');
-            return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-        }
-
-        function parseTimeToMinutes(timeStr) {
-            if (!timeStr) return 0;
-            const parts = String(timeStr).split(':');
-            const hh = parseInt(parts[0], 10) || 0;
-            const mm = parseInt(parts[1], 10) || 0;
-            return (hh * 60) + mm;
-        }
-
-        function addMinutesToTime(timeStr, minutesOffset) {
-            if (!timeStr) return '';
-            let mins = parseTimeToMinutes(timeStr);
-            mins += minutesOffset;
-            const hh = Math.floor(mins / 60) % 24;
-            const mm = mins % 60;
-            const pad = (n) => String(n).padStart(2, '0');
-            return `${pad(hh)}:${pad(mm)}`;
-        }
-
-        // Helper function for YYYY-MM-DD HH:mm:ss formatting
-        function formatDateTime(date) {
-            const pad = (n) => n.toString().padStart(2, '0');
-            const YYYY = date.getFullYear();
-            const MM = pad(date.getMonth() + 1);
-            const DD = pad(date.getDate());
-
-            let hh = date.getHours();
-            let mm = pad(date.getMinutes());
-            let ss = pad(date.getSeconds());
-
-            // Format to 24 Hour standard which translates well into Excel
-            return `${YYYY}-${MM}-${DD} ${pad(hh)}:${mm}:${ss}`;
-        }
-    </script>
+    // Init
+    setDefaultDate();
+    loadApiData();
+  </script>
 </body>
-
 </html>
