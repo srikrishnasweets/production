@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -197,6 +198,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <div class="card">
@@ -224,13 +226,13 @@
     </div>
 
     <button id="processBtn" class="btn" disabled>Generate & Download Files</button>
-    
+
     <div id="status" class="status-message"></div>
   </div>
 
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycby-t__7U1IJMhRn19dOgAeZhbk7JXt99K22xFxaAXjBleNF-6-UxcCDwIhejZl9oesebA/exec';
-    
+
     let apiData = [];
     const issuedByInput = document.getElementById('issuedBy');
     const deliveryDateInput = document.getElementById('deliveryDate');
@@ -240,6 +242,19 @@
     const fileNameDisplay = document.getElementById('fileNameDisplay');
     const processBtn = document.getElementById('processBtn');
     const statusDiv = document.getElementById('status');
+
+    // Load Issued By from local storage
+    function loadSavedIssuedBy() {
+      const saved = localStorage.getItem('issuedBy');
+      if (saved) {
+        issuedByInput.value = saved;
+      }
+    }
+
+    // Save Issued By to local storage
+    issuedByInput.addEventListener('input', () => {
+      localStorage.setItem('issuedBy', issuedByInput.value.trim());
+    });
 
     // Set Default Date to Today
     function setDefaultDate() {
@@ -264,12 +279,12 @@
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error('Failed to fetch from API');
         apiData = await response.json();
-        
+
         // Enable file input & styled upload area
         fileInput.disabled = false;
         uploadLabel.classList.remove('disabled');
         uploadText.innerHTML = '<span>Click to upload</span> or drag & drop';
-        
+
         showStatus('Master data synced successfully. Ready to process.', 'info');
         checkFormValidity();
       } catch (error) {
@@ -286,7 +301,7 @@
     }
 
     [issuedByInput, deliveryDateInput].forEach(el => el.addEventListener('input', checkFormValidity));
-    
+
     fileInput.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
         const name = e.target.files[0].name;
@@ -317,7 +332,7 @@
       e.preventDefault();
       uploadLabel.style.borderColor = '';
       uploadLabel.style.background = '';
-      
+
       if (e.dataTransfer.files.length > 0) {
         fileInput.files = e.dataTransfer.files;
         // Trigger change event programmatically
@@ -351,19 +366,19 @@
       showStatus('Processing excel...', 'info');
 
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
-          
-          let targetSheetName = workbook.SheetNames.find(s => s.trim().toUpperCase() === 'SET');
+
+          let targetSheetName = workbook.SheetNames.find(s => ['SKS'].includes(s.trim().toUpperCase()));
           if (!targetSheetName) {
             targetSheetName = workbook.SheetNames[0];
           }
-          
+
           const worksheet = workbook.Sheets[targetSheetName];
           const sheetJson = XLSX.utils.sheet_to_json(worksheet);
-          
+
           if (sheetJson.length === 0) {
             showStatus('The uploaded sheet is empty.', 'error');
             return;
@@ -385,6 +400,15 @@
             return;
           }
 
+          // Validate set names against Master API list
+          for (const row of uploadedRows) {
+            const match = apiData.find(item => item.Set && item.Set.trim().toLowerCase() === row.set.toLowerCase());
+            if (!match) {
+              showStatus(`${row.set} not found`, 'error');
+              return;
+            }
+          }
+
           const issuedBy = issuedByInput.value.trim();
           const deliveryDateFormatted = formatDateDMY(deliveryDateInput.value);
           const todayDate = getTodayDateDMY();
@@ -401,9 +425,9 @@
               'Delivery Date': deliveryDateFormatted
             });
 
-            // Compare to Master API Data
+            // Compare to Master API Data (guaranteed to match here)
             const match = apiData.find(item => item.Set && item.Set.trim().toLowerCase() === row.set.toLowerCase());
-            
+
             prodEntryData.push({
               'Entry Date': todayDate,
               'Master': match ? (match.Master || '') : 'NOT FOUND',
@@ -434,13 +458,15 @@
           showStatus('Failed to process Excel file.', 'error');
         }
       };
-      
+
       reader.readAsArrayBuffer(file);
     });
 
     // Init
+    loadSavedIssuedBy();
     setDefaultDate();
     loadApiData();
   </script>
 </body>
+
 </html>
