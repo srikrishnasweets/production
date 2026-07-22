@@ -234,6 +234,8 @@
     const API_URL = 'https://script.google.com/macros/s/AKfycby-t__7U1IJMhRn19dOgAeZhbk7JXt99K22xFxaAXjBleNF-6-UxcCDwIhejZl9oesebA/exec';
 
     let apiData = [];
+    let ignoredBoms = new Set();
+    let correctedBoms = new Map();
     const issuedByInput = document.getElementById('issuedBy');
     const deliveryDateInput = document.getElementById('deliveryDate');
     const fileInput = document.getElementById('fileInput');
@@ -303,6 +305,8 @@
     [issuedByInput, deliveryDateInput].forEach(el => el.addEventListener('input', checkFormValidity));
 
     fileInput.addEventListener('change', (e) => {
+      ignoredBoms.clear();
+      correctedBoms.clear();
       if (e.target.files.length > 0) {
         const name = e.target.files[0].name;
         fileNameDisplay.textContent = `Selected: ${name}`;
@@ -359,6 +363,30 @@
       return `${dd}-${mm}-${yyyy}`;
     }
 
+    function getLevenshteinDistance(a, b) {
+      const matrix = [];
+      for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+      }
+      for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+      }
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1, // substitution
+              matrix[i][j - 1] + 1,     // insertion
+              matrix[i - 1][j] + 1      // deletion
+            );
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    }
+
     processBtn.addEventListener('click', () => {
       const file = fileInput.files[0];
       if (!file) return;
@@ -384,27 +412,116 @@
             return;
           }
 
-          // Parse columns by sequence (1st column is Product/Set Name, 2nd column is Quantity)
+          // Parse columns (Excel now only has BOM and SET columns)
           const uploadedRows = sheetJson.map(row => {
             const keys = Object.keys(row);
-            const firstKey = keys[0];
-            const secondKey = keys[1];
+            // Look for keys matching 'bom' and 'set' case-insensitively
+            const bomKey = keys.find(k => k.toLowerCase() === 'bom');
+            const setKey = keys.find(k => k.toLowerCase() === 'set');
+
+            // Fallback to position if exact header names aren't matched
+            const finalBomKey = bomKey || keys[0];
+            const finalSetKey = setKey || keys[1];
+            const rawBom = finalBomKey ? String(row[finalBomKey] || '').trim() : '';
+            const correctedBom = correctedBoms.get(rawBom.toLowerCase()) || rawBom;
             return {
-              set: firstKey ? String(row[firstKey] || '').trim() : '',
-              qty: secondKey ? Number(row[secondKey] || 0) : 0
+              bom: correctedBom,
+              qty: finalSetKey ? Number(row[finalSetKey] || 0) : 0
             };
-          }).filter(row => row.set !== '');
+          }).filter(row => row.bom !== '');
 
           if (uploadedRows.length === 0) {
-            showStatus('No rows with SET & QTY column found.', 'error');
+            showStatus('No rows with BOM & SET column found.', 'error');
             return;
           }
 
-          // Validate set names against Master API list
+          // Validate BOM names against Master API list
           for (const row of uploadedRows) {
-            const match = apiData.find(item => item.Set && item.Set.trim().toLowerCase() === row.set.toLowerCase());
+            const bomNameLower = row.bom.toLowerCase();
+            if (ignoredBoms.has(bomNameLower)) {
+              continue;
+            }
+            const match = apiData.find(item => item.Bom && item.Bom.trim().toLowerCase() === bomNameLower);
             if (!match) {
-              showStatus(`${row.set} not found`, 'error');
+              showStatus(`BOM "${row.bom}" not found in master data.`, 'error');
+
+              const container = document.createElement('div');
+              container.style.marginTop = '8px';
+              container.style.display = 'flex';
+              container.style.flexDirection = 'column';
+              container.style.gap = '6px';
+              container.style.alignItems = 'center';
+
+              // Find suggestions
+              const suggestions = [];
+              const queryClean = bomNameLower.replace(/\s+/g, '');
+              for (const item of apiData) {
+                if (!item.Bom) continue;
+                const itemBom = item.Bom.trim();
+                const itemBomLower = itemBom.toLowerCase();
+                const itemClean = itemBomLower.replace(/\s+/g, '');
+
+                if (queryClean === itemClean) {
+                  suggestions.push({ bom: itemBom, dist: 0 });
+                  continue;
+                }
+                const dist = getLevenshteinDistance(bomNameLower, itemBomLower);
+                if (dist <= 3) {
+                  suggestions.push({ bom: itemBom, dist: dist });
+                }
+              }
+              suggestions.sort((a, b) => a.dist - b.dist);
+              const uniqueSuggestions = Array.from(new Set(suggestions.map(s => s.bom))).slice(0, 3);
+
+              if (uniqueSuggestions.length > 0) {
+                const suggestionLabel = document.createElement('div');
+                suggestionLabel.textContent = 'Did you mean:';
+                suggestionLabel.style.fontSize = '0.85rem';
+                suggestionLabel.style.fontWeight = 'bold';
+                suggestionLabel.style.marginTop = '4px';
+                container.appendChild(suggestionLabel);
+
+                uniqueSuggestions.forEach(sug => {
+                  const sugBtn = document.createElement('button');
+                  sugBtn.textContent = sug;
+                  sugBtn.style.padding = '4px 10px';
+                  sugBtn.style.fontSize = '0.8rem';
+                  sugBtn.style.cursor = 'pointer';
+                  sugBtn.style.border = '1px solid #1e3a8a';
+                  sugBtn.style.borderRadius = '4px';
+                  sugBtn.style.background = '#eff6ff';
+                  sugBtn.style.color = '#1e3a8a';
+                  sugBtn.style.fontWeight = '500';
+                  sugBtn.style.width = '100%';
+                  sugBtn.style.maxWidth = '250px';
+
+                  sugBtn.addEventListener('click', () => {
+                    correctedBoms.set(bomNameLower, sug);
+                    processBtn.click();
+                  });
+                  container.appendChild(sugBtn);
+                });
+              }
+
+              const ignoreBtn = document.createElement('button');
+              ignoreBtn.textContent = 'Ignore';
+              ignoreBtn.style.padding = '4px 12px';
+              ignoreBtn.style.fontSize = '0.8rem';
+              ignoreBtn.style.cursor = 'pointer';
+              ignoreBtn.style.border = '1px solid #b91c1c';
+              ignoreBtn.style.borderRadius = '4px';
+              ignoreBtn.style.background = '#fff';
+              ignoreBtn.style.color = '#b91c1c';
+              ignoreBtn.style.fontWeight = '600';
+              ignoreBtn.style.marginTop = '6px';
+
+              ignoreBtn.addEventListener('click', () => {
+                ignoredBoms.add(bomNameLower);
+                processBtn.click();
+              });
+              container.appendChild(ignoreBtn);
+
+              statusDiv.appendChild(container);
               return;
             }
           }
@@ -416,17 +533,20 @@
           const setEntryData = [];
           const prodEntryData = [];
 
-          uploadedRows.forEach(row => {
+          const rowsToProcess = uploadedRows.filter(row => !ignoredBoms.has(row.bom.toLowerCase()));
+
+          rowsToProcess.forEach(row => {
+            // Compare to Master API Data (guaranteed to match here)
+            const match = apiData.find(item => item.Bom && item.Bom.trim().toLowerCase() === row.bom.toLowerCase());
+            const setName = match ? (match.Set || '') : '';
+
             // Set Entry Columns
             setEntryData.push({
-              'Product Name': row.set,
+              'Product Name': setName,
               'Quantity': row.qty,
               'Issued By': issuedBy,
               'Delivery Date': deliveryDateFormatted
             });
-
-            // Compare to Master API Data (guaranteed to match here)
-            const match = apiData.find(item => item.Set && item.Set.trim().toLowerCase() === row.set.toLowerCase());
 
             prodEntryData.push({
               'Entry Date': todayDate,
