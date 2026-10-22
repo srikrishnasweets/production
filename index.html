@@ -390,6 +390,30 @@
       return matrix[b.length][a.length];
     }
 
+    // Helper to find item in apiData.production: checks Bom first, then Set
+    function findMasterItem(inputName) {
+      if (!inputName) return null;
+      const targetLower = String(inputName).trim().toLowerCase();
+      const targetNorm = targetLower.replace(/\s+/g, ' ');
+      if (!apiData.production || !Array.isArray(apiData.production)) return null;
+
+      // 1. Try matching Bom (exact trimmed or normalized spaces)
+      let match = apiData.production.find(item => item.Bom && item.Bom.trim().toLowerCase() === targetLower);
+      if (!match) {
+        match = apiData.production.find(item => item.Bom && item.Bom.trim().toLowerCase().replace(/\s+/g, ' ') === targetNorm);
+      }
+
+      // 2. If not found in Bom, verify in Set (exact trimmed or normalized spaces)
+      if (!match) {
+        match = apiData.production.find(item => item.Set && item.Set.trim().toLowerCase() === targetLower);
+      }
+      if (!match) {
+        match = apiData.production.find(item => item.Set && item.Set.trim().toLowerCase().replace(/\s+/g, ' ') === targetNorm);
+      }
+
+      return match;
+    }
+
     processBtn.addEventListener('click', () => {
       const file = fileInput.files[0];
       if (!file) return;
@@ -415,40 +439,74 @@
             return;
           }
 
-          // Parse columns (Excel now only has BOM and SET columns)
+          // Parse columns (handles BOM/SET name column and quantity/SET column)
           const uploadedRows = sheetJson.map(row => {
             const keys = Object.keys(row);
-            // Look for keys matching 'bom' and 'set' case-insensitively
-            const bomKey = keys.find(k => k.toLowerCase() === 'bom');
-            const setKey = keys.find(k => k.toLowerCase() === 'set');
+            let nameKey = keys.find(k => {
+              const lower = k.toLowerCase().trim();
+              return lower === 'bom' || lower.includes('bom') || lower.includes('product') || lower.includes('item');
+            });
+            let qtyKey = keys.find(k => {
+              const lower = k.toLowerCase().trim();
+              return ['qty', 'quantity', 'target', 'target set', 'count'].includes(lower);
+            });
 
-            // Fallback to position if exact header names aren't matched
-            const finalBomKey = bomKey || keys[0];
-            const finalSetKey = setKey || keys[1];
-            const rawBom = finalBomKey ? String(row[finalBomKey] || '').trim() : '';
-            const correctedBom = correctedBoms.get(rawBom.toLowerCase()) || rawBom;
+            if (!nameKey && !qtyKey) {
+              const setKeys = keys.filter(k => k.toLowerCase().trim().includes('set'));
+              if (setKeys.length >= 1 && keys.length >= 2) {
+                const firstVal = row[keys[0]];
+                const secondVal = row[keys[1]];
+                if (typeof firstVal === 'string' && isNaN(Number(firstVal)) && !isNaN(Number(secondVal))) {
+                  nameKey = keys[0];
+                  qtyKey = keys[1];
+                } else if (keys[0].toLowerCase().trim() === 'bom') {
+                  nameKey = keys[0];
+                  qtyKey = keys[1];
+                } else {
+                  nameKey = keys[0];
+                  qtyKey = keys[1];
+                }
+              } else {
+                nameKey = keys[0];
+                qtyKey = keys[1];
+              }
+            } else if (nameKey && !qtyKey) {
+              qtyKey = keys.find(k => k !== nameKey && k.toLowerCase().includes('set')) || keys.find(k => k !== nameKey);
+            } else if (!nameKey && qtyKey) {
+              nameKey = keys.find(k => k !== qtyKey);
+            }
+
+            if (nameKey === qtyKey && keys.length > 1) {
+              qtyKey = keys.find(k => k !== nameKey);
+            }
+
+            const finalNameKey = nameKey || keys[0];
+            const finalQtyKey = (qtyKey && qtyKey !== finalNameKey) ? qtyKey : keys[1];
+
+            const rawName = finalNameKey ? String(row[finalNameKey] || '').trim() : '';
+            const correctedName = correctedBoms.get(rawName.toLowerCase()) || rawName;
             return {
-              bom: correctedBom,
-              qty: finalSetKey ? Number(row[finalSetKey] || 0) : 0
+              bom: correctedName,
+              qty: finalQtyKey ? Number(row[finalQtyKey] || 0) : 0
             };
           }).filter(row => row.bom !== '');
 
           console.log('[Excel Upload] Parsed rows from file:', uploadedRows);
 
           if (uploadedRows.length === 0) {
-            showStatus('No rows with BOM & SET column found.', 'error');
+            showStatus('No valid rows found in uploaded sheet.', 'error');
             return;
           }
 
-          // Validate BOM names against Master API list
+          // Validate input item names against Master API list (checking BOM first, then SET)
           for (const row of uploadedRows) {
             const bomNameLower = row.bom.toLowerCase();
             if (ignoredBoms.has(bomNameLower)) {
               continue;
             }
-            const match = apiData.production.find(item => item.Bom && item.Bom.trim().toLowerCase() === bomNameLower);
+            const match = findMasterItem(row.bom);
             if (!match) {
-              showStatus(`BOM "${row.bom}" not found in master data.`, 'error');
+              showStatus(`"${row.bom}" not found in BOM or SET master data.`, 'error');
 
               const container = document.createElement('div');
               container.style.marginTop = '8px';
@@ -457,26 +515,44 @@
               container.style.gap = '6px';
               container.style.alignItems = 'center';
 
-              // Find suggestions
+              // Find suggestions across both Bom and Set
               const suggestions = [];
               const queryClean = bomNameLower.replace(/\s+/g, '');
               for (const item of apiData.production) {
-                if (!item.Bom) continue;
-                const itemBom = item.Bom.trim();
-                const itemBomLower = itemBom.toLowerCase();
-                const itemClean = itemBomLower.replace(/\s+/g, '');
+                // Check Bom
+                if (item.Bom && item.Bom.trim()) {
+                  const itemBom = item.Bom.trim();
+                  const itemBomLower = itemBom.toLowerCase();
+                  const itemClean = itemBomLower.replace(/\s+/g, '');
 
-                if (queryClean === itemClean) {
-                  suggestions.push({ bom: itemBom, dist: 0 });
-                  continue;
+                  if (queryClean === itemClean) {
+                    suggestions.push({ name: itemBom, dist: 0 });
+                  } else {
+                    const dist = getLevenshteinDistance(bomNameLower, itemBomLower);
+                    if (dist <= 3) {
+                      suggestions.push({ name: itemBom, dist: dist });
+                    }
+                  }
                 }
-                const dist = getLevenshteinDistance(bomNameLower, itemBomLower);
-                if (dist <= 3) {
-                  suggestions.push({ bom: itemBom, dist: dist });
+
+                // Check Set
+                if (item.Set && item.Set.trim()) {
+                  const itemSet = item.Set.trim();
+                  const itemSetLower = itemSet.toLowerCase();
+                  const itemClean = itemSetLower.replace(/\s+/g, '');
+
+                  if (queryClean === itemClean) {
+                    suggestions.push({ name: itemSet, dist: 0 });
+                  } else {
+                    const dist = getLevenshteinDistance(bomNameLower, itemSetLower);
+                    if (dist <= 3) {
+                      suggestions.push({ name: itemSet, dist: dist });
+                    }
+                  }
                 }
               }
               suggestions.sort((a, b) => a.dist - b.dist);
-              const uniqueSuggestions = Array.from(new Set(suggestions.map(s => s.bom))).slice(0, 3);
+              const uniqueSuggestions = Array.from(new Set(suggestions.map(s => s.name))).slice(0, 3);
 
               if (uniqueSuggestions.length > 0) {
                 const suggestionLabel = document.createElement('div');
@@ -542,13 +618,13 @@
           const rowsToProcess = uploadedRows.filter(row => !ignoredBoms.has(row.bom.toLowerCase()));
 
           rowsToProcess.forEach(row => {
-            // Compare to Master API Data (guaranteed to match here)
-            const match = apiData.production.find(item => item.Bom && item.Bom.trim().toLowerCase() === row.bom.toLowerCase());
+            // Compare to Master API Data (checks BOM first, then Set)
+            const match = findMasterItem(row.bom);
             const setName = match ? (match.Set || '') : '';
 
             // Set Entry Columns
             setEntryData.push({
-              'Product Name': setName,
+              'Product Name': setName || row.bom,
               'Quantity': row.qty,
               'Issued By': issuedBy,
               'Delivery Date': deliveryDateFormatted
@@ -567,13 +643,19 @@
 
             // Calculate Ghee Consumption
             if (apiData.bom && Array.isArray(apiData.bom)) {
-              const bomName = row.bom.trim().toLowerCase();
-              const gheeItems = apiData.bom.filter(b => 
-                b.Master && 
-                b.Master.trim().toLowerCase() === bomName && 
-                b['Input Product'] && 
-                b['Input Product'].trim().toUpperCase() === 'GHEE TIN 15KG'
-              );
+              const targetBom = (match && match.Bom ? match.Bom : '').trim().toLowerCase();
+              const targetSet = (match && match.Set ? match.Set : '').trim().toLowerCase();
+              const rawInput = row.bom.trim().toLowerCase();
+
+              const gheeItems = apiData.bom.filter(b => {
+                if (!b.Master) return false;
+                const bMaster = b.Master.trim().toLowerCase();
+                const matchesItem = (targetBom && bMaster === targetBom) ||
+                                    (targetSet && bMaster === targetSet) ||
+                                    (bMaster === rawInput);
+                const isGhee = b['Input Product'] && b['Input Product'].trim().toUpperCase() === 'GHEE TIN 15KG';
+                return matchesItem && isGhee;
+              });
 
               if (gheeItems.length > 0) {
                 const totalGheeInputQty = gheeItems.reduce((sum, item) => sum + Number(item['Input Quantity'] || 0), 0);
